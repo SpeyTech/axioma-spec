@@ -1,0 +1,34 @@
+# Build outputs
+build/
+dist/
+*.o
+*.a
+*.so
+*.dylib
+
+# C99 build artifacts
+*.d
+*.map
+
+# Editor and OS
+.DS_Store
+.vscode/
+*.swp
+*.swo
+*~
+Thumbs.db
+
+# Test outputs
+tests/output/
+*.gcov
+*.gcda
+*.gcno
+
+# Proprietary / never commit
+*.key
+*.pem
+secrets/
+.env
+
+# Generated
+axioms.yml.bak
