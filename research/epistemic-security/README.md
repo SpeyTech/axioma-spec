@@ -36,7 +36,7 @@ The SRS-008 SHALL requirements extend the Axioma SRS stack (SRS-001 through SRS-
 
 ## Citation
 
-> Murray, W. (2026). *Epistemic Security: A Missing Assurance Dimension in Frontier AI Deployment*. SpeyTech. April 9, 2026.
+> Murray, W. (2026). *Epistemic Security: A Missing Assurance Dimension in Frontier AI Deployment*. SpeyTech. April 9, 2026. https://doi.org/10.5281/zenodo.19489291
 
 ---
 

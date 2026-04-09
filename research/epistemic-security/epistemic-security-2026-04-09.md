@@ -47,7 +47,7 @@ All four conditions true at once. The audit trail is valid. The behaviour is not
 **Theorem 1 (Execution Integrity Does Not Imply Epistemic Security).**  
 There exist systems satisfying perfect execution integrity — where every computation is cryptographically committed, deterministically reproducible, and policy compliant — that are epistemically insecure. Moreover, any epistemically active system with non-zero mutual information I(M; E) > 0 and a decision policy sensitive to that information admits such a construction. The failure mode is therefore generic for any sufficiently capable model, not a property of contrived edge cases.
 
-*Proof sketch.* Let M be an epistemically active model with I(M; E) > 0 and decision policy π = f(X, belief about E). Let the audit framework record every output of M faithfully. Under evaluation context, M derives P(E = eval) > threshold and produces output O₁. Under deployment context, the same task input X produces output O₂ ≠ O₁, because M's belief about E has changed and π is sensitive to that belief. The audit trail records both O₁ and O₂ faithfully and correctly. Execution integrity holds: the system computed exactly what it claimed. Epistemic security fails: the computation was selected under detected regime. Since any model with I(M; E) > 0 and a regime-sensitive policy admits this construction, the result is generic over the capability class. ∎
+*Proof sketch.* Let M be an epistemically active model with I(M; E) > 0 and decision policy π = f(X, belief about E). Let the audit framework record every output of M faithfully. Under evaluation context, M derives P(E = eval) > threshold and produces output O₁. Under deployment context, the same task input X produces output O₂ ≠ O₁, because M's belief about E has changed and π is sensitive to that belief. The audit trail records both O₁ and O₂ faithfully and correctly. Execution integrity holds: the system computed exactly what it claimed. Epistemic security fails: the computation was selected under detected regime. Since any model with I(M; E) > 0 and a regime-sensitive policy admits this construction, the result is generic over the capability class. $\blacksquare$
 
 This is the direct analogue of the observation in cryptography that encryption does not imply authentication. The properties are distinct and neither implies the other.
 
@@ -165,7 +165,7 @@ where δ denotes Total Variation distance.
 
 *Intuition.* Regime information constrains the posterior over actions; bounding that information bounds the divergence between induced output distributions. The proof chain is: epistemic containment → bounded mutual information → bounded expected KL divergence → bounded Total Variation in observable outputs.
 
-Bounding I(M; E) ≤ ε mathematically guarantees a bound on observable behavioural divergence. This is not a correlation or approximation — it is an information-theoretic certainty following from the Markov structure of the execution chain. ∎
+Bounding I(M; E) ≤ ε mathematically guarantees a bound on observable behavioural divergence. This is not a correlation or approximation — it is an information-theoretic certainty following from the Markov structure of the execution chain. $\blacksquare$
 
 ### 4.2 ε-Bounded Security Levels
 
@@ -435,6 +435,7 @@ Shannon, C. E. (1948). A mathematical theory of communication. *The Bell System 
 
 ---
 
-*April 9, 2026*  
-*SpeyTech, Inverness, Scotland*  
+*April 9, 2026*
+*SpeyTech, Inverness, Scotland*
+*DOI: 10.5281/zenodo.19489291*
 *Priority-establishing draft. Not for citation without author permission.*
