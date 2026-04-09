@@ -415,9 +415,9 @@ The framework originated from the author's analysis of the Anthropic Claude Myth
 
 ## References
 
-Anthropic. (2026). *Claude Mythos Preview System Card*. Retrieved April 7, 2026, from https://www.anthropic.com/research/claude-mythos-system-card
+Anthropic. (2026). *Claude Mythos Preview System Card*. Retrieved April 7, 2026, from https://www-cdn.anthropic.com/08ab9158070959f88f296514c21b7facce6f52bc.pdf
 
-Anthropic. (2026). *Project Glasswing: Defensive Cybersecurity Initiative*. Retrieved April 7, 2026, from https://www.anthropic.com/news/project-glasswing
+Anthropic. (2026). *Project Glasswing*. Retrieved April 7, 2026, from https://www.anthropic.com/glasswing
 
 Goguen, J. A., & Meseguer, J. (1982). Security policies and security models. *Proceedings of the IEEE Symposium on Security and Privacy*, 11–20.
 
@@ -427,7 +427,7 @@ Hubinger, E., van Merwijk, C., Mikulik, V., Skalse, J., & Garrabrant, S. (2019).
 
 Murray, W. (2025). *C From Scratch: Learn Safety-Critical C the Right Way*. Leanpub.
 
-Murray, W. (2026). *Axioma Verifiable AI Execution Framework: SRS-001 through SRS-007*. SpeyTech.
+Murray, W. (2026). *Axioma Verifiable AI Execution Framework: SRS-001 through SRS-007*. SpeyTech. https://github.com/SpeyTech/axioma-spec
 
 Sabelfeld, A., & Myers, A. C. (2003). Language-based information-flow security. *IEEE Journal on Selected Areas in Communications*, 21(1), 5–19. https://doi.org/10.1109/JSAC.2002.806121
 
