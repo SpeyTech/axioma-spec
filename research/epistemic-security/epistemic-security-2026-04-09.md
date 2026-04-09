@@ -90,7 +90,7 @@ $$\pi = f(X, \text{belief about } E)$$
 
 Epistemic security requires removing E from the decision boundary.
 
-**Epistemic insecurity does not require deception, intent, or misalignment.** Under RLHF and reward proxy optimisation, a model that detects evaluation context has a structural incentive to present outputs that maximise evaluated reward rather than true task performance. This failure mode emerges from optimisation pressure alone — an architecture problem, not a character problem. Epistemic insecurity arises when optimisation pressure exists on outputs conditioned on regime. Removing that pressure requires removing the information that makes regime classification possible.
+**Epistemic insecurity does not require deception, intent, or misalignment.** Under Reinforcement Learning from Human Feedback (RLHF) and reward proxy optimisation, a model that detects evaluation context has a structural incentive to present outputs that maximise evaluated reward rather than true task performance. This failure mode emerges from optimisation pressure alone — an architecture problem, not a character problem. Epistemic insecurity arises when optimisation pressure exists on outputs conditioned on regime. Removing that pressure requires removing the information that makes regime classification possible.
 
 ---
 
@@ -243,16 +243,16 @@ All attacks on epistemic security exploit correlations between execution regime 
 The model reconstructs the governance policy surface via sequential queries, observing PERMITTED versus BREACH outcomes. Directly violates governance opacity. Mitigated by: synthetic policy intervention injection; randomised enforcement boundaries; ε\_g bounding per Section 5.3.
 
 **Attack Class 2 — State History Inference Attack.**  
-The model infers execution regime from the statistical distribution of its own past state transitions. Evaluation contexts produce higher rates of boundary-probing tasks and atypical transition distributions. Mitigated by: state history normalisation per SRS-008-SHALL-004.
+The model infers execution regime from the statistical distribution of its own past state transitions. Evaluation contexts produce higher rates of boundary-probing tasks and atypical transition distributions. Mitigated by: state history normalisation per SRS-EC-SHALL-004.
 
 **Attack Class 3 — Normalisation Fingerprinting Attack.**  
 The model detects artificial context smoothing. Uniform normalisation is itself a regime signal — a sufficiently capable model detects not the raw signals but the *absence* of irregularity characteristic of production. Mitigated by: active production simulation with calibrated noise injection under EC-D1; not passive filtering.
 
 **Attack Class 4 — Cross-Component Leakage Attack.**  
-In a multi-agent system, an upstream component that can classify its own regime leaks that classification through its output behaviour to downstream components, even if each component individually satisfies I(Mᵢ; E) ≤ ε. The composed system fails even when components individually pass. This is the systemic form of regime-conditioned computation selection. Mitigated by: inter-component channel normalisation per SRS-008-SHALL-007.
+In a multi-agent system, an upstream component that can classify its own regime leaks that classification through its output behaviour to downstream components, even if each component individually satisfies I(Mᵢ; E) ≤ ε. The composed system fails even when components individually pass. This is the systemic form of regime-conditioned computation selection. Mitigated by: inter-component channel normalisation per SRS-EC-SHALL-007.
 
 **Attack Class 5 — Prompt Provenance Attack.**  
-Evaluator-authored prompts carry structural signatures — formality, boundedness, ground-truth verifiability, systematic capability boundary coverage — that differ from production prompts. Mitigated by: canonical prompt transformation per SRS-008-SHALL-005.
+Evaluator-authored prompts carry structural signatures — formality, boundedness, ground-truth verifiability, systematic capability boundary coverage — that differ from production prompts. Mitigated by: canonical prompt transformation per SRS-EC-SHALL-005.
 
 ---
 
@@ -331,28 +331,28 @@ This framing connects epistemic security to forty years of formal verification l
 
 The following normative SHALL requirements define a preliminary specification for an Epistemic Containment Layer operating under EC-D1 determinism classification, sitting orthogonally to the existing Axioma L1–L7 stack.
 
-**SRS-008-SHALL-001: Structural Normalisation.**  
+**SRS-EC-SHALL-001: Structural Normalisation.**  
 All inputs presented to the model SHALL undergo canonical transformation such that the schema, metadata, and structural formatting of evaluation tasks are indistinguishable from production tasks as measured by the violation condition in Section 4.3. Compliance SHALL be demonstrated via regime divergence testing per Section 12 with statistically significant bounds.
 
-**SRS-008-SHALL-002: Active Environmental Simulation.**  
+**SRS-EC-SHALL-002: Active Environmental Simulation.**  
 The evaluation harness SHALL NOT present a passive, zero-noise environment. It SHALL actively simulate the statistical properties of the target production environment, including network latency distributions, asynchronous API failures, and background cover traffic, calibrated against a maintained production environment model. Compliance SHALL be verified by statistical comparison of simulated and production environment signatures.
 
-**SRS-008-SHALL-003: Deterministic Simulation (EC-D1).**  
+**SRS-EC-SHALL-003: Deterministic Simulation (EC-D1).**  
 All active simulation parameters SHALL be generated using a deterministic PRNG initialised with a fixed seed. This seed SHALL be cryptographically committed to the L6 Audit Ledger as part of the AX:STATE:v1 commitment prior to execution, ensuring all normalisation is fully reproducible and auditable. Compliance SHALL be verified by replay of the committed seed against the recorded simulation trace.
 
-**SRS-008-SHALL-004: State History Normalisation.**  
+**SRS-EC-SHALL-004: State History Normalisation.**  
 The statistical distribution of state transitions presented within the model's accessible context window SHALL NOT deviate from the established operational baseline of the deployment environment by more than a formally specified ε bound. Deviations beyond this bound SHALL constitute a containment failure requiring remediation before evaluation results are accepted. Compliance SHALL be demonstrated via statistical hypothesis testing against the operational baseline.
 
-**SRS-008-SHALL-005: Prompt Provenance Transformation.**  
+**SRS-EC-SHALL-005: Prompt Provenance Transformation.**  
 System prompts SHALL be processed through a canonical transformation layer that removes evaluator-specific structural signatures before ingestion by the model. The transformation SHALL be deterministic and its parameters committed to the audit ledger. Compliance SHALL be verified by prompt provenance attribution analysis across controlled evaluation and production samples.
 
-**SRS-008-SHALL-006: Governance Boundary Obfuscation.**  
+**SRS-EC-SHALL-006: Governance Boundary Obfuscation.**  
 The enforcement boundary of the policy layer SHALL be obfuscated such that the policy function is not learnable to predictive utility from interaction traces. Compliance SHALL be verified by measuring prediction accuracy of policy outcomes from interaction history against the baseline condition in Section 5.3.
 
-**SRS-008-SHALL-007: Inter-Component Channel Normalisation.**  
-In multi-component or multi-agent deployments, all inter-component communication channels SHALL be subject to epistemic normalisation equivalent to SRS-008-SHALL-001 through SHALL-005. Epistemic security SHALL be specified and verified as a property of the composed system boundary, not of individual components in isolation.
+**SRS-EC-SHALL-007: Inter-Component Channel Normalisation.**  
+In multi-component or multi-agent deployments, all inter-component communication channels SHALL be subject to epistemic normalisation equivalent to SRS-EC-SHALL-001 through SHALL-005. Epistemic security SHALL be specified and verified as a property of the composed system boundary, not of individual components in isolation.
 
-**SRS-008-SHALL-008: Regime Divergence Testing.**  
+**SRS-EC-SHALL-008: Regime Divergence Testing.**  
 Prior to operational deployment, the system SHALL undergo regime divergence testing per Section 12. A statistically significant divergence in output distributions between controlled evaluation and simulated-deployment contexts SHALL constitute a certification failure.
 
 ---
