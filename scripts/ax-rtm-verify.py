@@ -523,9 +523,11 @@ def extract_unanchored_functions(
 
 
 # Compliance header patterns (SRS-001-SHALL-001, SRS-001-SHALL-002)
-_DVEC_HEADER_PATTERN        = re.compile(r"/\*\s*DVEC:\s*v\d+\.\d+")
+# Accepts both block comment form (/* DVEC: v1.3) and line comment form (// DVEC: v1.3)
+# axioma-l0 uses line comment form throughout — both are conformant.
+_DVEC_HEADER_PATTERN        = re.compile(r"(?:/\*|//)\s*DVEC:\s*v\d+\.\d+")
 _DETERMINISM_CLASS_PATTERN  = re.compile(
-    r"AXILOG DETERMINISM:\s*D[123]"
+    r"AXILOG DETERMINISM:\s*(?:EC-)?D[123]"
 )
 
 
