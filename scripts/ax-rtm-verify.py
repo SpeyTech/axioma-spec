@@ -22,8 +22,7 @@ Exit codes:
   1  Non-conformant   — violations detected (commit/merge blocked)
   2  Tool error       — SRS or source files unreadable (tool misconfigured)
 
-Author: William Murray · SpeyTech · March 2026
-Patent: GB2521625.0
+Author: William Murray · Spey Systems LTD · March 2026
 """
 
 import re
@@ -711,7 +710,7 @@ def build_report(
     tool_path = os.path.abspath(__file__)
 
     report = RTMReport(
-        timestamp       = datetime.datetime.now(datetime.timezone.utc).isoformat() + "Z",
+        timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z"),
         conformant      = conformant,
         summary         = {
             "total_requirements":       len(anchored) + len(pending),
@@ -757,11 +756,18 @@ def print_report(report: RTMReport, verbose: bool = False) -> None:
     def c(colour: str, text: str) -> str:
         return f"{colour}{text}{RESET}" if is_tty else text
 
+    banner = (
+        f"{TOOL_NAME} {TOOL_VERSION}",
+        f"DVEC {DVEC_VERSION} · SRS {SRS_VERSION} · Spey Systems LTD",
+    )
+    pad   = 2
+    width = max(len(line) for line in banner) + pad * 2
+
     print()
-    print(c(BOLD, "╔══════════════════════════════════════════════════════════════╗"))
-    print(c(BOLD, f"║  {TOOL_NAME} {TOOL_VERSION:<49}║"))
-    print(c(BOLD, f"║  DVEC {DVEC_VERSION} · SRS {SRS_VERSION} · SpeyTech · Patent GB2521625.0  ║"))
-    print(c(BOLD, "╚══════════════════════════════════════════════════════════════╝"))
+    print(c(BOLD, f"╔{'═' * width}╗"))
+    for line in banner:
+        print(c(BOLD, f"║{' ' * pad}{line:<{width - pad}}║"))
+    print(c(BOLD, f"╚{'═' * width}╝"))
     print()
 
     s = report.summary
@@ -984,7 +990,7 @@ def write_markdown_report(report: RTMReport, report_dir: str) -> str:
         "---",
         "",
         f"*{report.tool} {report.tool_version} · DVEC {report.dvec_version} · "
-        f"SpeyTech · Patent GB2521625.0*",
+        f"Spey Systems LTD*",
     ]
 
     with open(out_path, "w", encoding="utf-8") as f:

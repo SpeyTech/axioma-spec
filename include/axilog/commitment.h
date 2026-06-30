@@ -6,8 +6,8 @@
  * DETERMINISM: D1 — Strict Deterministic
  * MEMORY: Zero Dynamic Allocation
  *
- * Copyright (c) 2026 The Murray Family Innovation Trust
- * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright (c) 2026 Spey Systems LTD
+ * SPDX-License-Identifier: AGPL-3.0-or-later
  * Patent: UK GB2521625.0
  *
  * @traceability SRS-007-SHALL-001, SRS-007-SHALL-002, SRS-007-SHALL-003,

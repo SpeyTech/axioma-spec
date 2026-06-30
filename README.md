@@ -4,7 +4,7 @@
 **DVEC:** v1.3
 **Determinism Class:** D1
 **Layer:** Layer 1-7 — Framework Specification and Shared Headers
-**License:** GPL-3.0
+**License:** AGPL-3.0
 **Part of:** [axilog.io](https://axilog.io) · SpeyTech
 
 > *"Turing completeness is a vulnerability. Totality is a feature."*
@@ -31,9 +31,9 @@ See `docs/requirements/`
 
 ### License
 
-GPL-3.0 — see LICENSE
+AGPL-3.0 — see LICENSE
 
 ---
 
-Copyright © 2026 The Murray Family Innovation Trust. All rights reserved.  
+Copyright © 2026 Spey Systems LTD. All rights reserved.  
 Patent GB2521625.0

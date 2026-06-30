@@ -32,3 +32,6 @@ secrets/
 
 # Generated
 axioms.yml.bak
+build-arm/
+build-sdk/
+build/
