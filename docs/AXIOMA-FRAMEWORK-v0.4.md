@@ -942,12 +942,12 @@ No direct competitor exists in this form.
 
 | Finding | Source | Resolution |
 |---------|--------|------------|
-| Ledger Total Order not stated | GPT | §8 L6 |
-| Time Oracle monotonicity missing | GPT | §8 L5 |
-| Oracle terminology unified | GPT | §3 |
-| AX:OBS:v1 formal schema | GPT | §5.3 |
-| RFC 8785 JCS requirement | GPT | §5.2 |
-| C99 commitment implementation | GPT | §5.4 |
+| Ledger Total Order not stated | Internal review | §8 L6 |
+| Time Oracle monotonicity missing | Internal review | §8 L5 |
+| Oracle terminology unified | Internal review | §3 |
+| AX:OBS:v1 formal schema | Internal review | §5.3 |
+| RFC 8785 JCS requirement | Internal review | §5.2 |
+| C99 commitment implementation | Internal review | §5.4 |
 
 ---
 

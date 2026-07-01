@@ -1168,9 +1168,9 @@ All v0.3 criteria hold. The following are added for v0.4 and v0.4-R1:
 
 | Finding / Addition | Source | Severity | Resolution |
 |---|---|---|---|
-| Inverse CDF widening gap — `u × H.total` may overflow 32-bit | G1 — Gemini | High | `(uint64_t)u × (uint64_t)H.total` mandated; DVEC-001 §7.2 anchor added; L0-SPEC-001 §5.4 updated |
-| Jitter-epsilon property 6 was an assertion not a mechanism | G2 — Gemini | High | `safe_envelope()` intersected-range mechanism specified; PRNG samples only from safe subset; [0,0] on boundary; no looping; L0-SPEC-001 §6.3 property 6 rewritten |
-| ε_g must be budget-scoped, not a static constant | G3 — Gemini | High | ε_g(Q) formalised; monotonicity invariant Q₁ < Q₂ → ε_g(Q₁) ≥ ε_g(Q₂); `l0_boundary_config_t` carries `query_budget_Q`; §12.5 V-C protocol updated; L0-SPEC-001 §8.2 rewritten |
+| Inverse CDF widening gap — `u × H.total` may overflow 32-bit | G1 — Internal review | High | `(uint64_t)u × (uint64_t)H.total` mandated; DVEC-001 §7.2 anchor added; L0-SPEC-001 §5.4 updated |
+| Jitter-epsilon property 6 was an assertion not a mechanism | G2 — Internal review | High | `safe_envelope()` intersected-range mechanism specified; PRNG samples only from safe subset; [0,0] on boundary; no looping; L0-SPEC-001 §6.3 property 6 rewritten |
+| ε_g must be budget-scoped, not a static constant | G3 — Internal review | High | ε_g(Q) formalised; monotonicity invariant Q₁ < Q₂ → ε_g(Q₁) ≥ ε_g(Q₂); `l0_boundary_config_t` carries `query_budget_Q`; §12.5 V-C protocol updated; L0-SPEC-001 §8.2 rewritten |
 | Subtype enforcement provenance-dependent, not payload-deterministic | R1 — Review A | Medium | Three-way layer discriminant adopted: non-null vocabulary-valid = L0, null/absent = non-L0, present-but-empty = malformed; `L0_SUBTYPE_MISSING` scoped to present-but-empty only; SUB-RULE-001 through SUB-RULE-004 rewritten; SDK enforcement text updated |
 | §12.6b measured statistic undefined — Mann-Whitney presupposes scalarisation | R2 — Review A | Medium | Statistic pre-declaration mandated; five permitted statistics tabulated; commitment to L6 before test execution; L0-SPEC-001 §12.6b updated |
 | Marginal-only fingerprint replay limitation silent | O1 — Review A | Low | Documented as known limitation in L0-SPEC-001 §5.2; registered as OQ-004 in §14; path to bivariate/copula extension specified |
@@ -1179,8 +1179,8 @@ All v0.3 criteria hold. The following are added for v0.4 and v0.4-R1:
 
 | Finding / Addition | Source | Severity | Resolution |
 |---|---|---|---|
-| Q budget enforcement delegated to L5 — L0 has no self-defence | G4 — Gemini | High | `L0_BUDGET_EXCEEDED` error class added to INV-007; `L0_SESSION_FLAG_BUDGET_EXCEEDED` flag added; `l0_admit()` gate in §10.2 enforces budget internally; L5 enforcement is defence-in-depth, not the authority |
-| PRNG range scaling formula unspecified — modulo bias and float risk | G5 — Gemini | High | `sample_in_range()` formula mandated in §6.3: `Δd_min + (((uint64_t)u × (uint64_t)R) >> 32)`; modulo and float explicitly forbidden; widening required per DVEC-001 §7.2 |
+| Q budget enforcement delegated to L5 — L0 has no self-defence | G4 — Internal review | High | `L0_BUDGET_EXCEEDED` error class added to INV-007; `L0_SESSION_FLAG_BUDGET_EXCEEDED` flag added; `l0_admit()` gate in §10.2 enforces budget internally; L5 enforcement is defence-in-depth, not the authority |
+| PRNG range scaling formula unspecified — modulo bias and float risk | G5 — Internal review | High | `sample_in_range()` formula mandated in §6.3: `Δd_min + (((uint64_t)u × (uint64_t)R) >> 32)`; modulo and float explicitly forbidden; widening required per DVEC-001 §7.2 |
 
 ### Full Audit Trail
 
