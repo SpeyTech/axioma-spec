@@ -20,7 +20,7 @@
 | v0.4 | April 2026 | Superseded | L0 Epistemic Containment Layer integration. Admission pipeline extended with L0 pre-processing stage. New evidence types. INV-009 extended. Golden vector suite extended. §1.4 PRNG carve-out. No existing invariants modified |
 | v0.4-R1 | April 2026 | Superseded | Multi-review closure: SUB-RULE-001 through SUB-RULE-004 (mandatory subtype verification); SRS-EC-SHALL-011 (containment equivalence test) added to golden vector suite and CLI; §12.5 governance probing test strengthened with adversary class declaration; §12.6 split into 12.6a syntactic and 12.6b behavioural; audit record updated |
 | v0.4-R2 | April 2026 | Superseded | Third-round closure: SUB-RULE layer discriminant (three-way payload classification); L0_SUBTYPE_MISSING error description tightened to present-but-empty case only; ε_g(Q) budget-scoped in boundary config struct; OQ-004 (marginal fingerprint correlation) referenced; L0-SPEC-001 v1.2 source reference |
-| v0.4-LOCKED | April 2026 | Current — Production Gold | Final closure: L0_BUDGET_EXCEEDED error class added; §0 and audit record updated; L0-SPEC-001 v1.3-LOCKED source. Three independent review sign-offs achieved. |
+| v0.4-LOCKED | April 2026 | Current — Production Gold | Final closure: L0_BUDGET_EXCEEDED error class added; §0 and audit record updated; L0-SPEC-001 v1.3-LOCKED source.  |
 
 ---
 
@@ -30,7 +30,7 @@ This document defines the SDK strategy for Axioma: what it is, who it serves, wh
 
 v0.4 integrates the Epistemic Containment Layer (L0) into the SDK strategy. L0 is specified in L0-SPEC-001 v1.3-LOCKED. All ten invariants (INV-001 through INV-010) from v0.3 are unchanged. L0 adds to the existing specification; it does not modify it.
 
-v0.4-R1 through v0.4-R2 applied three rounds of multi-review closure. v0.4-LOCKED adds `L0_BUDGET_EXCEEDED` to the failure class table (INV-007) and updates the source reference. Three independent review sign-offs confirm mathematical closure.
+v0.4-R1 through v0.4-R2 applied three rounds of multi-review closure. v0.4-LOCKED adds `L0_BUDGET_EXCEEDED` to the failure class table (INV-007) and updates the source reference.
 
 ---
 
