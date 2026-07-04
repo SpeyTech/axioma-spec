@@ -108,6 +108,12 @@ EVIDENCE_TAGS = [
     "AX:OBS:v1",
     "AX:POLICY:v1",
     "AX:PROOF:v1",
+    # FCC-001 claim records, registered DVEC-001 v1.4 4.4
+    "AX:FCC:C:v1",
+    "AX:FCC:TS:v1",
+    "AX:FCC:DEV:v1",
+    "AX:FCC:REG:v1",
+    "AX:FCC:VERDICT:v1",
 ]
 
 CHAIN_TAGS = [
@@ -119,6 +125,13 @@ CHAIN_TAGS = [
 
 # Tag cross-contamination: chain tags must not appear as evidence type values
 # and evidence tags must not appear as chain prefixes outside their namespace
+# Any domain tag literal: AX:*:vN or DVM:*:vN. Used by the closure scan
+# to flag tag strings absent from both registries (unregistered evidence
+# tags). This makes EVIDENCE_TAGS load-bearing: the linter is the
+# estate-wide registry drift guard, not declarative documentation.
+REGISTERED_ALL = set(EVIDENCE_TAGS) | set(CHAIN_TAGS)
+ANY_TAG_PATTERN = re.compile(r'"((?:AX|DVM):[A-Z]+(?::[A-Z]+)*:v\d+)"')
+
 CHAIN_TAG_PATTERN   = re.compile(
     r'"(' + "|".join(re.escape(t) for t in CHAIN_TAGS) + r')"'
     r'\s*(?:as|=|:)\s*(?:type|evidence_type)',
@@ -448,6 +461,20 @@ def scan_tag_violations(source_files: list[str]) -> list[TagViolation]:
                     tag       = m.group(1),
                     violation = "chain tag used as evidence type identifier",
                 ))
+            # Closure scan (DVEC §4.4, §4.5): any AX:*/DVM:* tag literal
+            # absent from both registries is an unregistered tag. This is
+            # what makes the registry closed estate-wide: a new tag must be
+            # registered in EVIDENCE_TAGS or CHAIN_TAGS or the linter blocks.
+            for tm in ANY_TAG_PATTERN.finditer(line):
+                tag = tm.group(1)
+                if tag not in REGISTERED_ALL:
+                    violations.append(TagViolation(
+                        file      = src_path,
+                        line      = line_num,
+                        tag       = tag,
+                        violation = "unregistered domain tag "
+                                    "(not in DVEC §4.4 registry)",
+                    ))
 
     return violations
 

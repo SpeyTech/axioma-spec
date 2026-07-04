@@ -1,6 +1,6 @@
 /**
  * @file dvec.h
- * @brief DVEC v1.3 contract declarations and domain tag registry
+ * @brief DVEC v1.4 contract declarations and domain tag registry
  *
  * DVEC: v1.3
  * DETERMINISM: D1 — Strict Deterministic
@@ -38,6 +38,15 @@
 #define AX_TAG_OBS     "AX:OBS:v1"     /**< Oracle interaction record */
 #define AX_TAG_POLICY  "AX:POLICY:v1"  /**< Governance rule evaluation */
 #define AX_TAG_PROOF   "AX:PROOF:v1"   /**< Replay or conformance proof */
+/**@}*/
+
+/** @name FCC-001 Claim Tags (registered DVEC v1.4) */
+/**@{*/
+#define AX_TAG_FCC_C       "AX:FCC:C:v1"       /**< FCC-001 commitment object C */
+#define AX_TAG_FCC_TS      "AX:FCC:TS:v1"      /**< Timestamp attestation and beacon reference */
+#define AX_TAG_FCC_DEV     "AX:FCC:DEV:v1"     /**< Beacon deviation, dead-calendar reduced set */
+#define AX_TAG_FCC_REG     "AX:FCC:REG:v1"     /**< Refutation registration */
+#define AX_TAG_FCC_VERDICT "AX:FCC:VERDICT:v1" /**< Verifier verdict record */
 /**@}*/
 
 /** @name Chain Tags (Protocol Prefixes) */

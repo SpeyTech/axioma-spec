@@ -1,10 +1,11 @@
 # DVEC-001
 ## Deterministic Verifiable Execution Contract
-**Version:** v1.3 — Final
+**Version:** v1.4 — Final
 **Status:** Production Gold
-**Supersedes:** DVEC-001 v1.2
-**Scope:** Axioma Framework · Axilog Substrate · certifiable-* Ecosystem
-**Alignment:** DVM-SPEC-001 v1.0-rc1 · Axioma v0.4 · MDCP · Patent GB2521625.0
+**Supersedes:** DVEC-001 v1.3
+**Parent commit:** 2dc2243c11a74072b7dd1c7be89746a158394144 (axioma-spec head this amendment is cut against)
+**Scope:** Axioma Framework · Axilog Substrate · certifiable-* Ecosystem · FCC-001 claim records
+**Alignment:** DVM-SPEC-001 v1.0-rc1 · Axioma v0.4 · MDCP · FCC-001 v0.4.1 · Patent GB2521625.0
 
 ---
 
@@ -15,7 +16,8 @@
 | v1.0 | Superseded | Initial draft |
 | v1.1 | Superseded | Fault propagation, memory totality, SRS traceability, CI gates, pre-commit guardrail, closure artifacts |
 | v1.2 | Superseded | Domain separation registry clarified — evidence type tags and chain tags formally separated |
-| v1.3 | Final | Terminology standardised to "non-conformant system"; arithmetic guardrail AST note; §2.5 terminal reset clarified |
+| v1.3 | Superseded | Terminology standardised to "non-conformant system"; arithmetic guardrail AST note; §2.5 terminal reset clarified |
+| v1.4 | Final | AX:FCC evidence tag block registered in §4.4 under the §4.5 process, for FCC-001 claim records: AX:FCC:C:v1, AX:FCC:TS:v1, AX:FCC:DEV:v1, AX:FCC:REG:v1, AX:FCC:VERDICT:v1. Additive: no existing evidence type changes. The closed registry has four enforcing copies across three repos, all patched: dvec.h defines (axioma-spec, canonical), ledger.c is_valid_evidence_tag (axioma-audit, made table-driven over the defines), chain.py REGISTERED_TAGS (exp1-runner), and the ax-rtm-verify.py closure scan (axioma-spec), which now flags any unregistered domain tag estate-wide. Per-repo drift-guard tests assert set equality against the canonical defines. |
 
 ---
 
@@ -254,6 +256,18 @@ separated namespaces. No cross-namespace reuse permitted.*
 | `AX:POLICY:v1` | Policy Assertion | Governance rule evaluation |
 | `AX:PROOF:v1` | Verification Proof | Replay or conformance proof |
 
+**FCC-001 claim tags** (registered v1.4) — falsifiable claim records per FCC-001. A distinct block
+so a verifier identifies claim record kinds at the tag layer, without payload-content discrimination,
+which is the domain-separation guarantee this registry exists to provide:
+
+| Tag | Type | Description |
+|-----|------|-------------|
+| `AX:FCC:C:v1` | Claim Commitment | The FCC-001 commitment object C, RFC 8785 serialised |
+| `AX:FCC:TS:v1` | Timestamp Attestation | OpenTimestamps or RFC 3161 proof and beacon block reference |
+| `AX:FCC:DEV:v1` | Beacon Deviation | Dead-calendar reduced-set commitment, written before the reduced set's attestation heights are knowable (FCC-001 §5.3) |
+| `AX:FCC:REG:v1` | Refutation Registration | Refuter genesis or claimant registry receipt (FCC-001 §7) |
+| `AX:FCC:VERDICT:v1` | Verdict Record | The verifier's UPHELD, REFUTED, INVALID-ATTEMPT, or INVALID-CLAIM output |
+
 **Chain tags** — ledger protocol prefixes, not evidence types:
 
 | Tag | Protocol | Description |
@@ -278,6 +292,60 @@ New evidence types require:
 - A formal migration specification
 - Backward compatibility proof for existing chains
 - Registry update with explicit changelog entry
+
+**v1.4 migration record (AX:FCC block).** The five AX:FCC tags are a new evidence type block, added
+under this process, not a new major version of an existing type.
+
+*The registry exists in four copies. This sentence is the one that saves the next engineer an
+afternoon.* The closed evidence-tag set is enforced independently in four places, and an amendment
+that patches fewer than all four leaves records rejected at the unpatched enforcement points:
+
+1. `axioma-spec/include/axilog/dvec.h`: the canonical `AX_TAG_*` string defines. Source of truth.
+2. `axioma-audit/src/ledger.c`, `is_valid_evidence_tag()`: the runtime gate for every evidence
+   record written through L6, including the gateway ledger seam. Rejects unregistered tags at write.
+3. `exp1-runner/runner/chain.py`, `REGISTERED_TAGS`, enforced in `append()`: the runner's write gate.
+   Instance zero writes its FCC records through this, so an unpatched copy refuses C, TS, DEV, REG,
+   and VERDICT the moment EXP-1 tries.
+4. `axioma-spec/scripts/ax-rtm-verify.py`, `EVIDENCE_TAGS`: the source-scanning domain-tag linter.
+
+v1.4 patches all four. dvec.h gains the five defines and is the source; ledger.c is made table-driven
+over the dvec.h defines so future amendments flow without editing its logic; chain.py gains the five
+tags and a drift-guard test asserting set equality against dvec.h; the linter list is extended.
+
+- *Migration specification.* The AX:FCC tags carry FCC-001 claim records defined in FCC-001 v0.4.1.
+  A consumer written against v1.3 encounters no AX:FCC record on any pre-v1.4 chain, because no such
+  record was ever written; FCC-001 instance zero (EXP-1) is the first producer and postdates this
+  amendment.
+- *Backward compatibility proof.* The addition is append-only to the evidence-tag namespace. No
+  existing tag string changes, no existing record's commitment `SHA-256(tag ‖ LE64(|payload|) ‖
+  payload)` changes, so every pre-v1.4 chain replays byte-identically under v1.4. The AX:FCC strings
+  are disjoint from the existing evidence tags and from all chain tags, so no cross-namespace reuse is
+  introduced and §4.4's closure invariant is preserved with a wider closed set. Frame compatibility
+  holds: the longest FCC tag (AX:FCC:VERDICT:v1, 17 bytes) is within GWL_TAG_MAX (32), and the FCC
+  chain frame format and genesis construction match the gateway ledger and audit exactly, so no
+  framing work is needed.
+- *Read-path scope (Y4).* The runner's `read_frames` is integrity-only: it checks commit and link
+  soundness, not registry membership, so any tag replays clean on read if the hashes hold. This is
+  acceptable for a claimant's own chain, gated at write. It is not sufficient for the FCC-001
+  verifier, which reads foreign chains (refuter attempts, Tier B reimplementations); the verifier
+  performs the registry membership check in its well-formedness stage, cause MALFORMED, for both
+  claimant and refuter chains. That check lives in the verifier specification, not in chain.py.
+- *Why AX:FCC:DEV is distinct rather than an AX:FCC:TS payload.* A beacon deviation is a chain
+  artefact the FCC-001 verifier reads to confirm no seed menu was opened on the dead-calendar fallback
+  path. Folding it into AX:FCC:TS payloads would force the verifier to parse timestamp payloads to
+  find deviations, which is exactly the payload-layer discrimination §4.4 tag separation exists to
+  forbid. A distinct tag keeps the identification at the tag layer.
+- *Drift guard (Y5).* Four copies of one registry is drift waiting for a fifth. A drift-guard test in
+  each derived consumer parses the `AX_TAG_*` defines from dvec.h and asserts set equality, so the
+  next amendment cannot lag a copy silently: the test fails the moment any copy diverges from the
+  canonical source.
+- *SDK boundary.* The axioma-sdk is claimant-side tooling: the SDK is how you make a claim, fcc-verify
+  is how your enemy checks it, and they share a specification, not code. The FCC-001 verifier does not
+  depend on the SDK, by the shared-instrument argument that governs Tier B: an adjudicator sharing the
+  claimant's arithmetic or frame reader lets one bug hide in both. When the SDK is refactored to fit
+  FCC, it exposes the C serialisation, the AX:FCC frame read and write against this registry, and the
+  beacon derivation, so a claimant produces conformant chains by construction; the verifier still
+  recomputes independently.
 
 ---
 
