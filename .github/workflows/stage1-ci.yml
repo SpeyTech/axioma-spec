@@ -40,4 +40,4 @@ jobs:
           python3 reference-python/selftest.py
           ${{ matrix.cc }} -std=c99 -Wall -Wextra -Werror -pedantic -O2 $SAN reference-c/merkle_v2.c -o "$RUNNER_TEMP/mv2"
           "$RUNNER_TEMP/mv2" | cmp - vectors.txt
-          sha256sum vectors.txt
+          echo "FINGERPRINT axioma-spec ${{ matrix.name }} $(uname -m) $(sha256sum vectors.txt | cut -d' ' -f1)"
