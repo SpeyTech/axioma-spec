@@ -252,6 +252,8 @@ Where:
 
 The seed is committed to L6 as an `AX:STATE:v1` record before any PRNG output is consumed. No simulation parameter is generated before the seed is committed.
 
+**Implementation note (E-SEED-1):** The v1 implementation in axioma-l0 departs from this derivation. Its seed digest, sha256_56(), is not SHA-256 for the 56-byte `seed_material`: the 0x80 padding byte is overwritten by the length field. The seed it produces is kept bit for bit, so anyone recomputing it as SHA-256(`seed_material`) will not reproduce it. The requirement above is unchanged; see erratum E-SEED-1 in the Errata section.
+
 ### 3.4 Stream Separation
 
 Different L0 subsystems use different PRNG streams to prevent correlation. Stream identifiers are fixed constants:
@@ -1047,6 +1049,8 @@ typedef struct {
 #define L0_SESSION_FLAG_BUDGET_EXCEEDED 0x0004u /* calls_processed >= query_budget_Q; admits locked */
 ```
 
+**Implementation note (E-SEED-1):** In the v1 implementation in axioma-l0, `seed_commitment` holds sha256_56(`seed_material`) between `l0_session_init()` and `l0_session_commit()`, and that value is not SHA-256. It is the value written into the `AX:STATE:v1` seed record. After commit, `seed_commitment` holds the ledger chain link, which is computed with SHA-256 through `axilog_commit()`. The structure above is unchanged; see erratum E-SEED-1 in the Errata section.
+
 **Budget enforcement note (G4):** L0 enforces its own query budget invariant. It does not delegate enforcement to L5. L5 may additionally enforce the budget; that is defence-in-depth, not a substitute. The authority for the invariant is L0. If `boundary_config.query_budget_Q > 0` and `calls_processed >= query_budget_Q` at the start of `l0_admit()`, L0 sets `L0_SESSION_FLAG_BUDGET_EXCEEDED`, sets `faults->state`, and returns `L0_BUDGET_EXCEEDED` without processing the call. The session is thereafter locked: all subsequent `l0_admit()` calls return `L0_BUDGET_EXCEEDED` immediately. No new PRNG output is generated after budget exhaustion.
 
 ### 10.3 Function Signatures
@@ -1388,6 +1392,26 @@ A software component implementing L0 is conformant only if:
 - The seed commitment ordering (SRS-EC-SHALL-009) is enforced at the API level
 
 Non-conformance is a system integrity failure.
+
+---
+
+## Errata (post v1.3-LOCKED)
+
+The specification above is locked and unchanged. The following entries record where an implementation departs from it. The source of each entry is the corresponding erratum in axioma-l0 docs/requirements/SRS-EC-001.md.
+
+**SRS-EC-SHALL-003 / SRS-EC-SHALL-009 seed derivation (E-SEED-1, open, October 2026):** The seed digest does not conform to §3.3 of this specification, which specifies seed = SHA-256(seed_material)[0..7]. The implementation, sha256_56() in axioma-l0 src/l0_session.c, is a single-block SHA-256 that is correct for messages of 55 bytes or fewer, but it is only ever called with the 56-byte seed material. At 56 bytes the 0x80 padding byte written at block[56] is overwritten by the high byte of the length field, so the digest is not SHA-256. For input bytes 0x00..0x37 it returns 0ae6c6818dfb68b66baf94805e42f448493c6ebf8905dfe01643cfb7adf27099, where SHA-256 is da2ae4d6b36748f2a318f23e7ab1dfdf45acdc9d049bd80e59de82a60895f562. Before this erratum the function had no length check: lengths 57 to 63 gave other wrong digests within bounds, and lengths of 64 or more wrote past its 64-byte stack buffer. No caller passed those lengths.
+
+*Since:* commit 8be0814 (2026-04-11), the first commit of axioma-l0 src/l0_session.c. The defect is present in every later commit.
+
+*Affects:* the PRNG seed derived by l0_session_init(), and therefore every PRNG draw and admission outcome of every session; the pre-commit seed_commitment, which l0_session_commit() writes into the AX:STATE:v1 seed record, and therefore the L0 ledger chain head after every session commit; and axioma-sdk golden/admission/admit_sequence.json, which is generated through l0_session_init(). Anyone recomputing the seed or seed_commitment as SHA-256(seed_material), as §3.3 instructs, will not reproduce them. The stream value derived alongside the seed is computed but unused, because the PRNG instances are initialised with the fixed L0_STREAM_* constants.
+
+*Does not affect:* axilog_sha256() and axilog_commit(), which are correct and are covered by known-answer tests in axioma-l0 test_conformance; the ledger's own hashing of the seed record; the golden vectors in axioma-l0 golden/ (PCG and canonicalisation only); the distinguisher harness and the EXP-1 stage 0 rig, which do not call l0_session_init() (their chain heads 901572fb..., b42f415a... and e0c131f1... reproduce unchanged); and the two anchors in axioma-l0 anchors/, which record the stage 0 and gateway chain heads.
+
+*Not known:* whether omitting the padding bit weakens any property the seed relies on has not been analysed; the seed is not secret (see erratum F4 in axioma-l0 docs/requirements/SRS-EC-001.md), so the defect is treated as a conformance and auditability fault, not a confidentiality one. Whether any seed record or seed_commitment value has been published or relied on outside the axioma-l0 repository is not known.
+
+*This change (axioma-l0 a0629c7, merged in 04e43eb):* sha256_56() now accepts exactly 56 bytes and refuses any other length by setting faults->base.domain, zeroing its output and returning L0_FAULT; the refusal is propagated through derive_seed() and l0_session_init(), and is unreachable from the present callers, which pass a fixed 56-byte buffer. The single-block compression underneath it refuses any length above 56, so no path can write outside its block. Output at 56 bytes is unchanged bit for bit, verified by the harness and stage 0 chain heads, a session seed and ledger probe, and regeneration of the axioma-sdk golden vectors. test_seed_digest_defect_pin records the defective digest and asserts that it differs from axilog_sha256(); it is a regression pin, not a correctness test.
+
+*Deliberately not done:* the digest is not corrected, sha256_56() is not renamed, and §3.3 and the documents that restate it are not edited, because every derived seed, seed record and SDK admission vector depends on the present output. A versioned replacement derivation, under which the seed becomes real SHA-256 and old records remain verifiable under the old version, is deferred to a later change.
 
 ---
 

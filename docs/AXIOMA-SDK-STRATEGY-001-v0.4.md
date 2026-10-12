@@ -600,6 +600,8 @@ pub enum EpistemicMode {
 }
 ```
 
+**Implementation note (E-SEED-1):** In the v1 implementation in axioma-l0, the seed commitment that `l0_session_commit()` writes into the `AX:STATE:v1` seed record is sha256_56(`seed_material`), which is not SHA-256 at 56 bytes. A `seed_commitment` taken from that record will therefore not match SHA-256(`seed_material`) as L0-SPEC-001 §3.3 specifies. The type above is unchanged; see erratum E-SEED-1 in L0-SPEC-001 (docs/requirements/SRS-EC-001-v1.3.md) and in axioma-l0 docs/requirements/SRS-EC-001.md.
+
 The `L0Session` is constructed from a committed L0 session initialisation record. The SDK verifies that `committed = true` before allowing `L0Transformed` state transitions. If `committed = false`, the `l0_transform` call returns `L0_COMMITMENT_ORDER` error (INV-007).
 
 **Key types:**
