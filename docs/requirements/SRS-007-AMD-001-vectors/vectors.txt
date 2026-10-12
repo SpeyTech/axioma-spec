@@ -63,3 +63,12 @@ REJECT case=index_out_of_range result=REJECTED(index_or_size)
 REJECT case=duplicate_ref result=REJECTED(input_not_strictly_ascending)
 REJECT case=non_ascending result=REJECTED(input_not_strictly_ascending)
 REJECT case=too_many_refs result=REJECTED(too_many_refs)
+REJECT case=internal_node_as_leaf_full result=REJECTED(root_mismatch)
+REJECT case=v1_root_presented_as_v2 result=REJECTED(root_mismatch)
+REJECT case=size_mismatch result=REJECTED(size_mismatch)
+V1ROOT n=0 root=0000000000000000000000000000000000000000000000000000000000000000
+V1ROOT n=1 root=b5c4f869e131a844497f0ce029f991c586abe87ca0597e20020ce9da394d404c
+V1ROOT n=2 root=9cf8583bd957ad8b132fbe522a9987492b14f240455328ac5917e64dc27a0769
+V1ROOT n=3 root=5f2633d975e15b008c39b8ae026428fa2dcf02bf092f70b8240806268fa32945
+V1ROOT n=4 root=0e6b54dbcc8652cc321bb6203d988fc9473ec138a86db3217b876470d6f7ebb8
+V1ROOT n=5 root=e1f86327da92e46b9a9dad8a7f657608c2e24517ef57823850a77bdea3bdeb47

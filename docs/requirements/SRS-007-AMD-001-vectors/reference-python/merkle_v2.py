@@ -1,12 +1,21 @@
-"""AX:MERKLE:v2 (SRS-007-AMD-001) clean-room implementation + vector emitter."""
+#!/usr/bin/env python3
+"""Clean-room implementation of SRS-007-AMD-001 v0.3 (AX:MERKLE:v2) and
+Appendix A (AX:MERKLE:v1), emitting the vector file of VECTOR-FORMAT.md v0.3."""
+
 import hashlib
 import struct
 import sys
 
 TAG = b"AX:MERKLE:v2"
+assert TAG == bytes([0x41, 0x58, 0x3A, 0x4D, 0x45, 0x52, 0x4B, 0x4C, 0x45, 0x3A, 0x76, 0x32])
 N_MAX = 1024
 MAX_PATH = 10
-assert len(TAG) == 12
+
+
+class Rejected(Exception):
+    def __init__(self, reason):
+        super().__init__(reason)
+        self.reason = reason
 
 
 def sha256(b):
@@ -17,15 +26,6 @@ def le64(x):
     return struct.pack("<Q", x)
 
 
-class Rejected(Exception):
-    def __init__(self, reason):
-        super().__init__(reason)
-        self.reason = reason
-
-    def verdict(self):
-        return "REJECTED(%s)" % self.reason
-
-
 def leaf_hash(d):
     return sha256(b"\x00" + d)
 
@@ -34,36 +34,37 @@ def node_hash(l, r):
     return sha256(b"\x01" + l + r)
 
 
-def _k(n):
+def split_point(n):
+    # largest power of two strictly less than n (n > 1)
     k = 1
     while k * 2 < n:
         k *= 2
     return k
 
 
-def check_input(D):
-    """SHALL-002: reject, never repair."""
-    if len(D) > N_MAX:
-        raise Rejected("too_many_refs")
-    for d in D:
-        if not isinstance(d, (bytes, bytearray)) or len(d) != 32:
-            # No reason name exists for this in SHALL-012 (see NOTES.md).
-            raise ValueError("reference must be exactly 32 bytes")
-    for i in range(1, len(D)):
-        if not (bytes(D[i - 1]) < bytes(D[i])):
-            raise Rejected("input_not_strictly_ascending")
-
-
 def mth(D):
     n = len(D)
     if n == 1:
         return leaf_hash(D[0])
-    k = _k(n)
-    return node_hash(mth(D[0:k]), mth(D[k:n]))
+    k = split_point(n)
+    return node_hash(mth(D[:k]), mth(D[k:]))
+
+
+def check_input_list(D):
+    # SHALL-002, in order: count first, then element length, then ordering.
+    n = len(D)
+    if n > N_MAX:
+        raise Rejected("too_many_refs")
+    for d in D:
+        if not isinstance(d, (bytes, bytearray)) or len(d) != 32:
+            raise Rejected("malformed_reference")
+    for i in range(n - 1):
+        if not (D[i] < D[i + 1]):
+            raise Rejected("input_not_strictly_ascending")
 
 
 def closure_root(D):
-    check_input(D)
+    check_input_list(D)
     n = len(D)
     if n == 0:
         return sha256(TAG + le64(0))
@@ -71,36 +72,45 @@ def closure_root(D):
 
 
 def path(m, D):
+    # SHALL-007 (internal; callers pass a checked list and 0 <= m < n)
     n = len(D)
-    if n <= 1:
+    if n == 1:
         return []
-    k = _k(n)
+    k = split_point(n)
     if m < k:
-        return path(m, D[0:k]) + [mth(D[k:n])]
-    return path(m - k, D[k:n]) + [mth(D[0:k])]
+        return path(m, D[:k]) + [mth(D[k:])]
+    return path(m - k, D[k:]) + [mth(D[:k])]
 
 
-def inclusion_proof(m, D):
-    check_input(D)
+def make_path(m, D):
+    check_input_list(D)
     n = len(D)
-    if not (0 <= m < n):
+    if not (1 <= n and 0 <= m < n):
         raise Rejected("index_or_size")
-    return (m, n, path(m, D))
+    return path(m, D)
 
 
-def verify(d, proof, R):
-    """SHALL-008. Returns verdict string."""
+def verify(d, proof, R, N):
     m, n, p = proof
-    # 1.
+    L = len(p)
+    # step 0 (lengths only; contents are not read)
+    if len(d) != 32 or any(len(x) != 32 for x in p):
+        return "REJECTED(malformed_reference)"
+    # step 1
     if not (1 <= n <= N_MAX and 0 <= m < n):
         return "REJECTED(index_or_size)"
-    # Extra rule after the algorithm: reject a path longer than 10 before reading it.
-    if len(p) > MAX_PATH:
+    # step 1a
+    if n != N:
+        return "REJECTED(size_mismatch)"
+    # step 1b
+    if L > MAX_PATH:
         return "REJECTED(path_too_long)"
-    # 2.
-    fn, sn, r = m, n - 1, leaf_hash(d)
-    # 3.
-    for i in range(len(p)):
+    # step 2
+    fn = m
+    sn = n - 1
+    r = leaf_hash(d)
+    # step 3
+    for i in range(L):
         if sn == 0:
             return "REJECTED(path_too_long)"
         pi = p[i]
@@ -113,16 +123,28 @@ def verify(d, proof, R):
             r = node_hash(r, pi)
         fn >>= 1
         sn >>= 1
-    # 4.
+    # step 4
     if sn != 0:
         return "REJECTED(path_too_short)"
-    # 5.
+    # step 5
     if sha256(TAG + le64(n) + r) != R:
         return "REJECTED(root_mismatch)"
     return "VERIFIED"
 
 
-# ---------------- vector harness ----------------
+def v1_root(D):
+    # Appendix A, frozen v1 construction
+    if len(D) == 0:
+        return bytes(32)
+    if len(D) == 1:
+        return D[0]
+    level = list(D)
+    while len(level) > 1:
+        if len(level) % 2 == 1:
+            level.append(level[-1])
+        level = [sha256(level[2 * i] + level[2 * i + 1]) for i in range(len(level) // 2)]
+    return level[0]
+
 
 def ref(i):
     return sha256(b"AX:MERKLE:v2:vector" + le64(i))
@@ -136,54 +158,71 @@ def hx(b):
     return b.hex()
 
 
-def section1():
+def main():
     out = []
+    lists = {}
+
+    def D(n):
+        if n not in lists:
+            lists[n] = D_n(n)
+        return lists[n]
+
+    # Section 1
     for n in (0, 1, 2, 3, 4, 5, 7, 8, 9, 1024):
-        D = D_n(n)
-        R = closure_root(D)
+        Dn = D(n)
+        R = closure_root(Dn)
         out.append("ROOT n=%d root=%s" % (n, hx(R)))
         ms = range(n) if n <= 9 else (0, 511, 512, 1023)
         for m in ms:
-            p = path(m, D)
-            v = verify(D[m], (m, n, p), R)
+            p = make_path(m, Dn)
+            v = verify(Dn[m], (m, n, p), R, n)
             ps = ",".join(hx(x) for x in p) if p else "-"
             out.append("PROOF n=%d m=%d len=%d path=%s result=%s" % (n, m, len(p), ps, v))
-    return out
 
+    # Section 2
+    D4, D9, D1024 = D(4), D(9), D(1024)
+    R4 = closure_root(D4)
+    R9 = closure_root(D9)
+    R1024 = closure_root(D1024)
+    node01 = node_hash(leaf_hash(D4[0]), leaf_hash(D4[1]))
+    P39 = make_path(3, D9)
+    zero = bytes(32)
 
-def _build(D):
-    try:
-        closure_root(D)
-        return "VERIFIED"  # unreachable for the cases below; never repaired
-    except Rejected as e:
-        return e.verdict()
+    def case(name, d, proof, R, N=None):
+        if N is None:
+            N = proof[1]
+        out.append("REJECT case=%s result=%s" % (name, verify(d, proof, R, N)))
 
+    def build_case(name, lst):
+        try:
+            closure_root(lst)
+            res = "VERIFIED"
+        except Rejected as e:
+            res = "REJECTED(%s)" % e.reason
+        out.append("REJECT case=%s result=%s" % (name, res))
 
-def section2():
-    D4, D9, D1024 = D_n(4), D_n(9), D_n(1024)
-    R4, R9, R1024 = closure_root(D4), closure_root(D9), closure_root(D1024)
-    inner = node_hash(leaf_hash(D4[0]), leaf_hash(D4[1]))
-    p4 = [mth(D4[2:4])]
-    P39 = path(3, D9)
-    cases = [
-        ("internal_node_as_leaf_short", verify(inner, (0, 4, p4), R4)),
-        ("internal_node_as_leaf_n2", verify(inner, (0, 2, p4), R4)),
-        ("wrong_index", verify(D9[3], (4, 9, P39), R9)),
-        ("wrong_size", verify(D9[3], (3, 8, P39), R9)),
-        ("path_short", verify(D9[3], (3, 9, P39[:-1]), R9)),
-        ("path_long", verify(D9[3], (3, 9, P39 + [bytes(32)]), R9)),
-        ("path_over_10", verify(D1024[0], (0, 1024, path(0, D1024) + [bytes(32)]), R1024)),
-        ("root_for_other_n", verify(D9[3], (3, 9, P39), sha256(TAG + le64(8) + mth(D9)))),
-        ("index_out_of_range", verify(D9[0], (9, 9, path(0, D9)), R9)),
-        ("duplicate_ref", _build([D9[0], D9[1], D9[1]])),
-        ("non_ascending", _build([D9[1], D9[0]])),
-        ("too_many_refs", _build(D_n(1025))),
-    ]
-    return ["REJECT case=%s result=%s" % c for c in cases]
+    case("internal_node_as_leaf_short", node01, (0, 4, [mth(D4[2:4])]), R4)
+    case("internal_node_as_leaf_n2", node01, (0, 2, [mth(D4[2:4])]), R4)
+    case("wrong_index", D9[3], (4, 9, P39), R9)
+    case("wrong_size", D9[3], (3, 8, P39), R9)
+    case("path_short", D9[3], (3, 9, P39[:-1]), R9)
+    case("path_long", D9[3], (3, 9, P39 + [zero]), R9)
+    case("path_over_10", D1024[0], (0, 1024, make_path(0, D1024) + [zero]), R1024)
+    case("root_for_other_n", D9[3], (3, 9, P39), sha256(TAG + le64(8) + mth(D9)))
+    case("index_out_of_range", D9[0], (9, 9, make_path(0, D9)), R9)
+    build_case("duplicate_ref", [D9[0], D9[1], D9[1]])
+    build_case("non_ascending", [D9[1], D9[0]])
+    build_case("too_many_refs", D(1025))
+    case("internal_node_as_leaf_full", node01, (0, 4, make_path(0, D4)), R4)
+    case("v1_root_presented_as_v2", D4[0], (0, 4, make_path(0, D4)), v1_root(D4))
+    case("size_mismatch", D9[3], (3, 9, P39), R9, N=8)
 
+    # Section 3
+    for n in (0, 1, 2, 3, 4, 5):
+        out.append("V1ROOT n=%d root=%s" % (n, hx(v1_root(D(n)))))
 
-def main():
-    sys.stdout.write("\n".join(section1() + section2()) + "\n")
+    data = "".join(line + "\n" for line in out)
+    sys.stdout.buffer.write(data.encode("ascii"))
 
 
 if __name__ == "__main__":

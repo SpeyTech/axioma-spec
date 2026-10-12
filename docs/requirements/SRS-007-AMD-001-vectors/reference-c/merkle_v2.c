@@ -1,15 +1,18 @@
-/* AX:MERKLE:v2 (SRS-007-AMD-001) clean-room implementation and vector generator.
- * Portable C99, no external libraries. SHA-256 per FIPS 180-4. */
+/* merkle_v2.c: clean-room implementation of SRS-007-AMD-001 v0.3 DRAFT
+ * (AX:MERKLE:v2 and Appendix A AX:MERKLE:v1) plus the v0.3 vector harness.
+ * C99, standard library only. */
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
 
-/* ---------------- SHA-256 (FIPS 180-4) ---------------- */
+/* ------------------------------------------------------------------ */
+/* FIPS 180-4 SHA-256                                                   */
+/* ------------------------------------------------------------------ */
 typedef struct {
     uint32_t h[8];
-    uint64_t len;          /* total bytes processed */
-    unsigned char buf[64];
+    uint64_t total;
+    uint8_t buf[64];
     size_t blen;
 } sha256_ctx;
 
@@ -25,333 +28,507 @@ static const uint32_t K256[64] = {
 };
 
 #define ROTR(x,n) (((x) >> (n)) | ((x) << (32 - (n))))
-#define CH(x,y,z) (((x) & (y)) ^ (~(x) & (z)))
-#define MAJ(x,y,z) (((x) & (y)) ^ ((x) & (z)) ^ ((y) & (z)))
-#define BSIG0(x) (ROTR(x,2) ^ ROTR(x,13) ^ ROTR(x,22))
-#define BSIG1(x) (ROTR(x,6) ^ ROTR(x,11) ^ ROTR(x,25))
-#define SSIG0(x) (ROTR(x,7) ^ ROTR(x,18) ^ ((x) >> 3))
-#define SSIG1(x) (ROTR(x,17) ^ ROTR(x,19) ^ ((x) >> 10))
 
-static void sha256_block(sha256_ctx *c, const unsigned char *p)
+static void sha256_block(uint32_t h[8], const uint8_t *p)
 {
-    uint32_t w[64], a, b, cc, d, e, f, g, h, t1, t2;
-    int t;
-    for (t = 0; t < 16; t++)
-        w[t] = ((uint32_t)p[4*t] << 24) | ((uint32_t)p[4*t+1] << 16) |
-               ((uint32_t)p[4*t+2] << 8) | (uint32_t)p[4*t+3];
-    for (t = 16; t < 64; t++)
-        w[t] = SSIG1(w[t-2]) + w[t-7] + SSIG0(w[t-15]) + w[t-16];
-    a = c->h[0]; b = c->h[1]; cc = c->h[2]; d = c->h[3];
-    e = c->h[4]; f = c->h[5]; g = c->h[6]; h = c->h[7];
-    for (t = 0; t < 64; t++) {
-        t1 = h + BSIG1(e) + CH(e,f,g) + K256[t] + w[t];
-        t2 = BSIG0(a) + MAJ(a,b,cc);
-        h = g; g = f; f = e; e = d + t1; d = cc; cc = b; b = a; a = t1 + t2;
+    uint32_t w[64], a, b, c, d, e, f, g, hh, t1, t2;
+    int i;
+    for (i = 0; i < 16; i++)
+        w[i] = ((uint32_t)p[4*i] << 24) | ((uint32_t)p[4*i+1] << 16) |
+               ((uint32_t)p[4*i+2] << 8) | (uint32_t)p[4*i+3];
+    for (i = 16; i < 64; i++) {
+        uint32_t s0 = ROTR(w[i-15],7) ^ ROTR(w[i-15],18) ^ (w[i-15] >> 3);
+        uint32_t s1 = ROTR(w[i-2],17) ^ ROTR(w[i-2],19) ^ (w[i-2] >> 10);
+        w[i] = w[i-16] + s0 + w[i-7] + s1;
     }
-    c->h[0] += a; c->h[1] += b; c->h[2] += cc; c->h[3] += d;
-    c->h[4] += e; c->h[5] += f; c->h[6] += g; c->h[7] += h;
+    a=h[0]; b=h[1]; c=h[2]; d=h[3]; e=h[4]; f=h[5]; g=h[6]; hh=h[7];
+    for (i = 0; i < 64; i++) {
+        uint32_t S1 = ROTR(e,6) ^ ROTR(e,11) ^ ROTR(e,25);
+        uint32_t ch = (e & f) ^ (~e & g);
+        uint32_t S0 = ROTR(a,2) ^ ROTR(a,13) ^ ROTR(a,22);
+        uint32_t mj = (a & b) ^ (a & c) ^ (b & c);
+        t1 = hh + S1 + ch + K256[i] + w[i];
+        t2 = S0 + mj;
+        hh = g; g = f; f = e; e = d + t1; d = c; c = b; b = a; a = t1 + t2;
+    }
+    h[0]+=a; h[1]+=b; h[2]+=c; h[3]+=d; h[4]+=e; h[5]+=f; h[6]+=g; h[7]+=hh;
 }
 
 static void sha256_init(sha256_ctx *c)
 {
-    static const uint32_t H0[8] = {
+    static const uint32_t iv[8] = {
         0x6a09e667u,0xbb67ae85u,0x3c6ef372u,0xa54ff53au,
         0x510e527fu,0x9b05688cu,0x1f83d9abu,0x5be0cd19u };
-    memcpy(c->h, H0, sizeof H0);
-    c->len = 0; c->blen = 0;
+    memcpy(c->h, iv, sizeof iv);
+    c->total = 0;
+    c->blen = 0;
 }
 
-static void sha256_update(sha256_ctx *c, const unsigned char *p, size_t n)
+static void sha256_update(sha256_ctx *c, const uint8_t *p, size_t n)
 {
-    c->len += n;
+    c->total += n;
     while (n > 0) {
         size_t take = 64 - c->blen;
         if (take > n) take = n;
         memcpy(c->buf + c->blen, p, take);
         c->blen += take; p += take; n -= take;
-        if (c->blen == 64) { sha256_block(c, c->buf); c->blen = 0; }
+        if (c->blen == 64) { sha256_block(c->h, c->buf); c->blen = 0; }
     }
 }
 
-static void sha256_final(sha256_ctx *c, unsigned char out[32])
+static void sha256_final(sha256_ctx *c, uint8_t out[32])
 {
-    uint64_t bits = c->len * 8u;
-    unsigned char pad = 0x80, zero = 0, lenb[8];
+    uint64_t bits = c->total * 8u;
+    uint8_t pad = 0x80, zero = 0, len[8];
     int i;
     sha256_update(c, &pad, 1);
     while (c->blen != 56) sha256_update(c, &zero, 1);
-    for (i = 0; i < 8; i++) lenb[i] = (unsigned char)(bits >> (56 - 8*i));
-    sha256_update(c, lenb, 8);
+    for (i = 0; i < 8; i++) len[i] = (uint8_t)(bits >> (56 - 8*i));
+    sha256_update(c, len, 8);
     for (i = 0; i < 8; i++) {
-        out[4*i]   = (unsigned char)(c->h[i] >> 24);
-        out[4*i+1] = (unsigned char)(c->h[i] >> 16);
-        out[4*i+2] = (unsigned char)(c->h[i] >> 8);
-        out[4*i+3] = (unsigned char)(c->h[i]);
+        out[4*i]   = (uint8_t)(c->h[i] >> 24);
+        out[4*i+1] = (uint8_t)(c->h[i] >> 16);
+        out[4*i+2] = (uint8_t)(c->h[i] >> 8);
+        out[4*i+3] = (uint8_t)(c->h[i]);
     }
 }
 
-static void sha256(const unsigned char *p, size_t n, unsigned char out[32])
+static void sha256(const uint8_t *p, size_t n, uint8_t out[32])
 {
-    sha256_ctx c; sha256_init(&c); sha256_update(&c, p, n); sha256_final(&c, out);
+    sha256_ctx c;
+    sha256_init(&c);
+    sha256_update(&c, p, n);
+    sha256_final(&c, out);
 }
 
-static void tohex(const unsigned char *p, size_t n, char *out)
+static void to_hex(const uint8_t *b, size_t n, char *out)
 {
     static const char hx[] = "0123456789abcdef";
     size_t i;
-    for (i = 0; i < n; i++) { out[2*i] = hx[p[i] >> 4]; out[2*i+1] = hx[p[i] & 15]; }
-    out[2*n] = 0;
+    for (i = 0; i < n; i++) { out[2*i] = hx[b[i] >> 4]; out[2*i+1] = hx[b[i] & 15]; }
+    out[2*n] = '\0';
 }
 
 static int sha256_selftest(void)
 {
-    static const char *msg[3] = {
-        "", "abc", "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq" };
-    static const char *exp[3] = {
-        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-        "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1" };
-    unsigned char d[32]; char hx[65]; int i;
+    static const struct { const char *msg; const char *hex; } tv[3] = {
+        { "", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" },
+        { "abc", "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad" },
+        { "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
+          "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1" }
+    };
+    int i;
     for (i = 0; i < 3; i++) {
-        sha256((const unsigned char *)msg[i], strlen(msg[i]), d);
-        tohex(d, 32, hx);
-        if (strcmp(hx, exp[i]) != 0) return 0;
+        uint8_t d[32]; char h[65];
+        sha256((const uint8_t *)tv[i].msg, strlen(tv[i].msg), d);
+        to_hex(d, 32, h);
+        if (strcmp(h, tv[i].hex) != 0) return 0;
     }
     return 1;
 }
 
-/* ---------------- AX:MERKLE:v2 ---------------- */
-#define N_MAX 1024
-#define PATH_MAX_LEN 10
-#define HL 32
+/* ------------------------------------------------------------------ */
+/* AX:MERKLE:v2                                                         */
+/* ------------------------------------------------------------------ */
+#define N_MAX 1024u
+#define L_MAX 10u
+static const uint8_t TAG[12] = { 0x41,0x58,0x3A,0x4D,0x45,0x52,0x4B,0x4C,0x45,0x3A,0x76,0x32 };
 
-static const unsigned char TAG[12] = {
-    0x41,0x58,0x3A,0x4D,0x45,0x52,0x4B,0x4C,0x45,0x3A,0x76,0x32 };
+/* A byte string with an explicit length, so that the "exactly 32 bytes"
+ * checks of SHALL-002 step 2 and SHALL-008 step 0 are real checks. */
+typedef struct { const uint8_t *p; size_t len; } bstr;
 
-typedef unsigned char ref_t[HL];
+typedef enum {
+    V_VERIFIED = 0,
+    R_INDEX_OR_SIZE, R_SIZE_MISMATCH, R_PATH_TOO_LONG, R_PATH_TOO_SHORT,
+    R_ROOT_MISMATCH, R_NOT_ASCENDING, R_TOO_MANY, R_MALFORMED
+} verdict;
 
-static void le64(uint64_t x, unsigned char out[8])
+static const char *verdict_str(verdict v)
 {
-    int i; for (i = 0; i < 8; i++) out[i] = (unsigned char)(x >> (8*i));
+    switch (v) {
+    case V_VERIFIED:        return "VERIFIED";
+    case R_INDEX_OR_SIZE:   return "REJECTED(index_or_size)";
+    case R_SIZE_MISMATCH:   return "REJECTED(size_mismatch)";
+    case R_PATH_TOO_LONG:   return "REJECTED(path_too_long)";
+    case R_PATH_TOO_SHORT:  return "REJECTED(path_too_short)";
+    case R_ROOT_MISMATCH:   return "REJECTED(root_mismatch)";
+    case R_NOT_ASCENDING:   return "REJECTED(input_not_strictly_ascending)";
+    case R_TOO_MANY:        return "REJECTED(too_many_refs)";
+    case R_MALFORMED:       return "REJECTED(malformed_reference)";
+    }
+    return "?";
 }
 
-static void leaf_hash(const unsigned char d[HL], unsigned char out[HL])
+static void le64(uint64_t x, uint8_t out[8])
 {
-    unsigned char b[1 + HL];
-    b[0] = 0x00; memcpy(b + 1, d, HL);
-    sha256(b, sizeof b, out);
+    int i;
+    for (i = 0; i < 8; i++) out[i] = (uint8_t)(x >> (8 * i));
 }
 
-static void node_hash(const unsigned char l[HL], const unsigned char r[HL], unsigned char out[HL])
+static void leaf_hash(const uint8_t d[32], uint8_t out[32])
 {
-    unsigned char b[1 + 2*HL];
-    b[0] = 0x01; memcpy(b + 1, l, HL); memcpy(b + 1 + HL, r, HL);
-    sha256(b, sizeof b, out);
+    uint8_t buf[33];
+    buf[0] = 0x00;
+    memcpy(buf + 1, d, 32);
+    sha256(buf, sizeof buf, out);
 }
 
-static size_t split_k(size_t n) /* largest power of two strictly less than n, n > 1 */
+static void node_hash(const uint8_t l[32], const uint8_t r[32], uint8_t out[32])
+{
+    uint8_t buf[65];
+    buf[0] = 0x01;
+    memcpy(buf + 1, l, 32);
+    memcpy(buf + 33, r, 32);
+    sha256(buf, sizeof buf, out);
+}
+
+/* SHA-256(TAG || LE64(n) || mth) or, if mth == NULL, SHA-256(TAG || LE64(n)). */
+static void tagged_root(uint64_t n, const uint8_t *mth, uint8_t out[32])
+{
+    uint8_t buf[52];
+    size_t len = 20;
+    memcpy(buf, TAG, 12);
+    le64(n, buf + 12);
+    if (mth) { memcpy(buf + 20, mth, 32); len = 52; }
+    sha256(buf, len, out);
+}
+
+/* largest power of two strictly less than n (n > 1) */
+static size_t split_k(size_t n)
 {
     size_t k = 1;
     while (k * 2 < n) k *= 2;
     return k;
 }
 
-/* MTH over D[0:n], n >= 1. Recursion depth <= log2(N_MAX)+1. */
-static void mth(ref_t *D, size_t n, unsigned char out[HL])
+/* SHALL-004. Caller guarantees n >= 1 and all elements are 32 bytes. */
+static void mth(const bstr *D, size_t n, uint8_t out[32])
 {
-    unsigned char a[HL], b[HL];
-    size_t k;
-    if (n == 1) { leaf_hash(D[0], out); return; }
-    k = split_k(n);
-    mth(D, k, a);
-    mth(D + k, n - k, b);
-    node_hash(a, b, out);
-}
-
-static void tagged_root(uint64_t n, const unsigned char *mthv, unsigned char out[HL])
-{
-    unsigned char b[12 + 8 + HL];
-    size_t len = 12 + 8;
-    memcpy(b, TAG, 12); le64(n, b + 12);
-    if (mthv) { memcpy(b + 20, mthv, HL); len += HL; }
-    sha256(b, len, out);
-}
-
-enum { OK = 0, R_INDEX_OR_SIZE, R_PATH_TOO_LONG, R_PATH_TOO_SHORT, R_ROOT_MISMATCH,
-       R_NOT_ASC, R_TOO_MANY };
-
-static const char *verdict(int v)
-{
-    switch (v) {
-    case OK: return "VERIFIED";
-    case R_INDEX_OR_SIZE: return "REJECTED(index_or_size)";
-    case R_PATH_TOO_LONG: return "REJECTED(path_too_long)";
-    case R_PATH_TOO_SHORT: return "REJECTED(path_too_short)";
-    case R_ROOT_MISMATCH: return "REJECTED(root_mismatch)";
-    case R_NOT_ASC: return "REJECTED(input_not_strictly_ascending)";
-    case R_TOO_MANY: return "REJECTED(too_many_refs)";
-    default: return "?";
+    if (n == 1) { leaf_hash(D[0].p, out); return; }
+    {
+        size_t k = split_k(n);
+        uint8_t l[32], r[32];
+        mth(D, k, l);
+        mth(D + k, n - k, r);
+        node_hash(l, r, out);
     }
 }
 
-/* SHALL-002/005. n is checked before any element is read. */
-static int closure_root(ref_t *D, size_t n, unsigned char out[HL])
+/* SHALL-002 checks, in order. Nothing at index >= N_MAX is read. */
+static verdict check_input(const bstr *D, size_t n)
 {
-    unsigned char m[HL];
     size_t i;
     if (n > N_MAX) return R_TOO_MANY;
-    for (i = 1; i < n; i++)
-        if (memcmp(D[i-1], D[i], HL) >= 0) return R_NOT_ASC;
-    if (n == 0) { tagged_root(0, NULL, out); return OK; }
-    mth(D, n, m);
-    tagged_root((uint64_t)n, m, out);
-    return OK;
+    for (i = 0; i < n; i++)
+        if (D[i].len != 32) return R_MALFORMED;
+    for (i = 0; i + 1 < n; i++)
+        if (memcmp(D[i].p, D[i + 1].p, 32) >= 0) return R_NOT_ASCENDING;
+    return V_VERIFIED;
 }
 
-/* SHALL-007. Appends into path (capacity PATH_MAX_LEN); returns new length. */
-static size_t gen_path(size_t m, ref_t *D, size_t n, ref_t *path, size_t len)
+/* SHALL-005, preceded by SHALL-002. Never sorts, never repairs. */
+static verdict closure_root(const bstr *D, size_t n, uint8_t out[32])
+{
+    verdict v = check_input(D, n);
+    if (v != V_VERIFIED) return v;
+    if (n == 0) { tagged_root(0, NULL, out); return V_VERIFIED; }
+    {
+        uint8_t h[32];
+        mth(D, n, h);
+        tagged_root((uint64_t)n, h, out);
+    }
+    return V_VERIFIED;
+}
+
+/* SHALL-007 (recursive core). Appends to path[*L]; cap is capacity. */
+static void path_rec(size_t m, const bstr *D, size_t n, uint8_t (*path)[32], size_t *L, size_t cap)
 {
     size_t k;
-    if (n == 1) return len;
+    uint8_t h[32];
+    if (n == 1) return;
     k = split_k(n);
     if (m < k) {
-        len = gen_path(m, D, k, path, len);
-        if (len < PATH_MAX_LEN) mth(D + k, n - k, path[len]);
+        path_rec(m, D, k, path, L, cap);
+        mth(D + k, n - k, h);
     } else {
-        len = gen_path(m - k, D + k, n - k, path, len);
-        if (len < PATH_MAX_LEN) mth(D, k, path[len]);
+        path_rec(m - k, D + k, n - k, path, L, cap);
+        mth(D, k, h);
     }
-    return len + 1;
+    if (*L >= cap) { fprintf(stderr, "path capacity exceeded\n"); exit(3); }
+    memcpy(path[*L], h, 32);
+    (*L)++;
 }
 
-/* SHALL-008. Reads at most plen entries of path, and none if plen > 10. */
-static int verify(const unsigned char d[HL], size_t m, size_t n,
-                  ref_t *path, size_t plen, const unsigned char R[HL])
+/* Path generation as a construction: input checks of SHALL-002 apply,
+ * and the proof must be for 0 <= m < n, n >= 1. */
+static verdict gen_path(size_t m, const bstr *D, size_t n, uint8_t (*path)[32], size_t *L, size_t cap)
 {
-    size_t fn, sn, i;
-    unsigned char r[HL], t[HL];
+    verdict v = check_input(D, n);
+    *L = 0;
+    if (v != V_VERIFIED) return v;
+    if (n < 1 || m >= n) return R_INDEX_OR_SIZE;
+    path_rec(m, D, n, path, L, cap);
+    return V_VERIFIED;
+}
+
+/* SHALL-008. path is an array of L byte strings; only path[0..L-1] is read. */
+static verdict verify(bstr d, uint64_t m, uint64_t n, const bstr *path, size_t L,
+                      const uint8_t R[32], uint64_t N)
+{
+    size_t i;
+    uint64_t fn, sn;
+    uint8_t r[32], t[32], root[32];
+
+    /* 0 */
+    if (d.len != 32) return R_MALFORMED;
+    for (i = 0; i < L; i++)
+        if (path[i].len != 32) return R_MALFORMED;
+    /* 1 */
     if (!(n >= 1 && n <= N_MAX && m < n)) return R_INDEX_OR_SIZE;
-    if (plen > PATH_MAX_LEN) return R_PATH_TOO_LONG;
+    /* 1a */
+    if (n != N) return R_SIZE_MISMATCH;
+    /* 1b */
+    if (L > L_MAX) return R_PATH_TOO_LONG;
+    /* 2 */
     fn = m; sn = n - 1;
-    leaf_hash(d, r);
-    for (i = 0; i < plen; i++) {
+    leaf_hash(d.p, r);
+    /* 3 */
+    for (i = 0; i < L; i++) {
+        const uint8_t *p = path[i].p;
         if (sn == 0) return R_PATH_TOO_LONG;
         if ((fn & 1u) == 1u || fn == sn) {
-            node_hash(path[i], r, t); memcpy(r, t, HL);
-            while ((fn & 1u) == 0 && fn != 0) { fn >>= 1; sn >>= 1; }
+            node_hash(p, r, t);
+            memcpy(r, t, 32);
+            while ((fn & 1u) == 0u && fn != 0u) { fn >>= 1; sn >>= 1; }
         } else {
-            node_hash(r, path[i], t); memcpy(r, t, HL);
+            node_hash(r, p, t);
+            memcpy(r, t, 32);
         }
         fn >>= 1; sn >>= 1;
     }
+    /* 4 */
     if (sn != 0) return R_PATH_TOO_SHORT;
-    tagged_root((uint64_t)n, r, t);
-    if (memcmp(t, R, HL) != 0) return R_ROOT_MISMATCH;
-    return OK;
+    /* 5 */
+    tagged_root(n, r, root);
+    if (memcmp(root, R, 32) != 0) return R_ROOT_MISMATCH;
+    /* 6 */
+    return V_VERIFIED;
 }
 
-/* ---------------- vector harness ---------------- */
-static ref_t g_refs[N_MAX + 1];
-
-static int refcmp(const void *a, const void *b) { return memcmp(a, b, HL); }
-
-static void make_D(size_t n, ref_t *out)
+/* ------------------------------------------------------------------ */
+/* Appendix A: AX:MERKLE:v1 (frozen)                                    */
+/* ------------------------------------------------------------------ */
+static void v1_root(const bstr *D, size_t n, uint8_t out[32])
 {
-    static const char pre[] = "AX:MERKLE:v2:vector";
-    unsigned char b[sizeof pre - 1 + 8];
-    size_t i;
-    for (i = 0; i < n; i++) {
-        memcpy(b, pre, sizeof pre - 1);
-        le64((uint64_t)i, b + sizeof pre - 1);
-        sha256(b, sizeof b, out[i]);
+    uint8_t (*level)[32];
+    size_t len, i;
+    if (n == 0) { memset(out, 0, 32); return; }
+    if (n == 1) { memcpy(out, D[0].p, 32); return; }
+    level = malloc((n + 1) * 32);
+    if (!level) { fprintf(stderr, "out of memory\n"); exit(3); }
+    for (i = 0; i < n; i++) memcpy(level[i], D[i].p, 32);
+    len = n;
+    while (len > 1) {
+        if (len % 2 == 1) { memcpy(level[len], level[len - 1], 32); len++; }
+        for (i = 0; i < len / 2; i++) {
+            uint8_t buf[64];
+            memcpy(buf, level[2*i], 32);
+            memcpy(buf + 32, level[2*i + 1], 32);
+            sha256(buf, 64, level[i]);
+        }
+        len /= 2;
     }
-    qsort(out, n, HL, refcmp);
+    memcpy(out, level[0], 32);
+    free(level);
 }
 
-static void print_hex(const unsigned char *p)
+/* ------------------------------------------------------------------ */
+/* Vector harness (VECTOR-FORMAT.md v0.3)                               */
+/* ------------------------------------------------------------------ */
+#define MAX_REFS 1025u
+static uint8_t REFS[MAX_REFS][32];
+
+static void gen_refs(void)
 {
-    char hx[2*HL + 1]; tohex(p, HL, hx); fputs(hx, stdout);
+    static const char pfx[] = "AX:MERKLE:v2:vector";
+    size_t i, pl = sizeof pfx - 1;
+    for (i = 0; i < MAX_REFS; i++) {
+        uint8_t buf[64];
+        memcpy(buf, pfx, pl);
+        le64((uint64_t)i, buf + pl);
+        sha256(buf, pl + 8, REFS[i]);
+    }
 }
 
-static void print_reject(const char *name, int v)
+static int cmp_bstr(const void *a, const void *b)
 {
-    printf("REJECT case=%s result=%s\n", name, verdict(v));
+    return memcmp(((const bstr *)a)->p, ((const bstr *)b)->p, 32);
 }
+
+/* D_n: [ref_0 .. ref_{n-1}] sorted ascending (producer-side sort, SHALL-014). */
+static bstr *make_D(size_t n)
+{
+    bstr *D = malloc((n ? n : 1) * sizeof *D);
+    size_t i;
+    if (!D) { fprintf(stderr, "out of memory\n"); exit(3); }
+    for (i = 0; i < n; i++) { D[i].p = REFS[i]; D[i].len = 32; }
+    qsort(D, n, sizeof *D, cmp_bstr);
+    return D;
+}
+
+static void print_hex(const uint8_t *b)
+{
+    char h[65];
+    to_hex(b, 32, h);
+    fputs(h, stdout);
+}
+
+static void must_ok(verdict v, const char *what)
+{
+    if (v != V_VERIFIED) {
+        fprintf(stderr, "harness: unexpected %s for %s\n", verdict_str(v), what);
+        exit(4);
+    }
+}
+
+#define PCAP 64u
+typedef struct { uint8_t h[PCAP][32]; size_t L; bstr b[PCAP]; } pathbuf;
+
+static void P(size_t m, const bstr *D, size_t n, pathbuf *pb)
+{
+    size_t i;
+    must_ok(gen_path(m, D, n, pb->h, &pb->L, PCAP), "PATH");
+    for (i = 0; i < pb->L; i++) { pb->b[i].p = pb->h[i]; pb->b[i].len = 32; }
+}
+
+static void reject_line(const char *name, verdict v)
+{
+    printf("REJECT case=%s result=%s\n", name, verdict_str(v));
+}
+
+static uint8_t ZERO32[32];
 
 int main(void)
 {
-    static const size_t NS[10] = { 0, 1, 2, 3, 4, 5, 7, 8, 9, 1024 };
-    static const size_t BIGM[4] = { 0, 511, 512, 1023 };
-    static ref_t D[N_MAX + 1], D4[4], D9[9];
-    ref_t path[PATH_MAX_LEN + 1];
-    unsigned char root[HL], R9[HL], R4[HL], R1024[HL], x[HL], y[HL];
-    size_t ni, j, plen;
-    int v;
+    static const size_t ns[] = { 0, 1, 2, 3, 4, 5, 7, 8, 9, 1024 };
+    static const size_t big_ms[] = { 0, 511, 512, 1023 };
+    size_t ni, i;
+    static pathbuf pb, pb2;
 
-    if (!sha256_selftest()) { fprintf(stderr, "SHA-256 self-test FAILED\n"); return 1; }
+    if (!sha256_selftest()) {
+        fprintf(stderr, "SHA-256 self-test FAILED\n");
+        return 1;
+    }
+    gen_refs();
 
     /* Section 1 */
-    for (ni = 0; ni < 10; ni++) {
-        size_t n = NS[ni], cnt = (n <= 9) ? n : 4;
-        make_D(n, D);
-        if (closure_root(D, n, root) != OK) { fprintf(stderr, "unexpected\n"); return 1; }
-        printf("ROOT n=%lu root=", (unsigned long)n); print_hex(root); putchar('\n');
-        for (j = 0; j < cnt; j++) {
-            size_t m = (n <= 9) ? j : BIGM[j], i;
-            plen = gen_path(m, D, n, path, 0);
-            if (plen > PATH_MAX_LEN) { fprintf(stderr, "path overflow\n"); return 1; }
-            v = verify(D[m], m, n, path, plen, root);
-            printf("PROOF n=%lu m=%lu len=%lu path=", (unsigned long)n, (unsigned long)m,
-                   (unsigned long)plen);
-            if (plen == 0) putchar('-');
-            for (i = 0; i < plen; i++) { if (i) putchar(','); print_hex(path[i]); }
-            printf(" result=%s\n", verdict(v));
+    for (ni = 0; ni < sizeof ns / sizeof ns[0]; ni++) {
+        size_t n = ns[ni], cnt, mi;
+        bstr *D = make_D(n);
+        uint8_t R[32];
+        must_ok(closure_root(D, n, R), "closure_root");
+        printf("ROOT n=%lu root=", (unsigned long)n);
+        print_hex(R);
+        putchar('\n');
+        cnt = (n <= 9) ? n : 4;
+        for (mi = 0; mi < cnt; mi++) {
+            size_t m = (n <= 9) ? mi : big_ms[mi];
+            verdict v;
+            P(m, D, n, &pb);
+            v = verify(D[m], m, n, pb.b, pb.L, R, n);
+            printf("PROOF n=%lu m=%lu len=%lu path=", (unsigned long)n,
+                   (unsigned long)m, (unsigned long)pb.L);
+            if (pb.L == 0) putchar('-');
+            for (i = 0; i < pb.L; i++) {
+                if (i) putchar(',');
+                print_hex(pb.h[i]);
+            }
+            printf(" result=%s\n", verdict_str(v));
         }
+        free(D);
     }
 
     /* Section 2 */
-    make_D(4, D4); closure_root(D4, 4, R4);
-    make_D(9, D9); closure_root(D9, 9, R9);
-    make_D(1024, D); closure_root(D, 1024, R1024);
-
-    /* 1, 2: internal node as leaf */
-    leaf_hash(D4[0], x); leaf_hash(D4[1], y); node_hash(x, y, x);
-    mth(D4 + 2, 2, path[0]);
-    print_reject("internal_node_as_leaf_short", verify(x, 0, 4, path, 1, R4));
-    print_reject("internal_node_as_leaf_n2", verify(x, 0, 2, path, 1, R4));
-
-    /* 3-6, 8, 9 on D_9 */
-    plen = gen_path(3, D9, 9, path, 0);
-    print_reject("wrong_index", verify(D9[3], 4, 9, path, plen, R9));
-    print_reject("wrong_size", verify(D9[3], 3, 8, path, plen, R9));
-    print_reject("path_short", verify(D9[3], 3, 9, path, plen - 1, R9));
-    memset(path[plen], 0, HL);
-    print_reject("path_long", verify(D9[3], 3, 9, path, plen + 1, R9));
-
-    /* 7: path over 10 */
     {
-        size_t pl = gen_path(0, D, 1024, path, 0);
-        if (pl != PATH_MAX_LEN) { fprintf(stderr, "unexpected len\n"); return 1; }
-        memset(path[pl], 0, HL);
-        print_reject("path_over_10", verify(D[0], 0, 1024, path, pl + 1, R1024));
+        bstr *D4 = make_D(4), *D9 = make_D(9), *D1024 = make_D(1024), *D1025 = make_D(1025);
+        uint8_t R4[32], R9[32], R1024[32], rtmp[32], node01[32], l0[32], l1[32], m23[32], m9[32];
+        bstr dnode, one[1];
+        verdict v;
+
+        must_ok(closure_root(D4, 4, R4), "R4");
+        must_ok(closure_root(D9, 9, R9), "R9");
+        must_ok(closure_root(D1024, 1024, R1024), "R1024");
+        leaf_hash(D4[0].p, l0);
+        leaf_hash(D4[1].p, l1);
+        node_hash(l0, l1, node01);
+        dnode.p = node01; dnode.len = 32;
+        mth(D4 + 2, 2, m23);
+        one[0].p = m23; one[0].len = 32;
+
+        /* 1 */
+        reject_line("internal_node_as_leaf_short", verify(dnode, 0, 4, one, 1, R4, 4));
+        /* 2 */
+        reject_line("internal_node_as_leaf_n2", verify(dnode, 0, 2, one, 1, R4, 2));
+        /* 3 */
+        P(3, D9, 9, &pb);
+        reject_line("wrong_index", verify(D9[3], 4, 9, pb.b, pb.L, R9, 9));
+        /* 4 */
+        reject_line("wrong_size", verify(D9[3], 3, 8, pb.b, pb.L, R9, 8));
+        /* 5 */
+        if (pb.L < 1) { fprintf(stderr, "harness: empty path\n"); return 4; }
+        reject_line("path_short", verify(D9[3], 3, 9, pb.b, pb.L - 1, R9, 9));
+        /* 6 */
+        pb.b[pb.L].p = ZERO32; pb.b[pb.L].len = 32;
+        reject_line("path_long", verify(D9[3], 3, 9, pb.b, pb.L + 1, R9, 9));
+        /* 7 */
+        P(0, D1024, 1024, &pb2);
+        pb2.b[pb2.L].p = ZERO32; pb2.b[pb2.L].len = 32;
+        reject_line("path_over_10", verify(D1024[0], 0, 1024, pb2.b, pb2.L + 1, R1024, 1024));
+        /* 8 */
+        mth(D9, 9, m9);
+        tagged_root(8, m9, rtmp);
+        reject_line("root_for_other_n", verify(D9[3], 3, 9, pb.b, pb.L, rtmp, 9));
+        /* 9 */
+        P(0, D9, 9, &pb2);
+        reject_line("index_out_of_range", verify(D9[0], 9, 9, pb2.b, pb2.L, R9, 9));
+        /* 10 */
+        {
+            bstr L3[3];
+            L3[0] = D9[0]; L3[1] = D9[1]; L3[2] = D9[1];
+            v = closure_root(L3, 3, rtmp);
+            reject_line("duplicate_ref", v);
+        }
+        /* 11 */
+        {
+            bstr L2[2];
+            L2[0] = D9[1]; L2[1] = D9[0];
+            v = closure_root(L2, 2, rtmp);
+            reject_line("non_ascending", v);
+        }
+        /* 12 */
+        reject_line("too_many_refs", closure_root(D1025, 1025, rtmp));
+        /* 13 */
+        P(0, D4, 4, &pb2);
+        reject_line("internal_node_as_leaf_full", verify(dnode, 0, 4, pb2.b, pb2.L, R4, 4));
+        /* 14 */
+        v1_root(D4, 4, rtmp);
+        reject_line("v1_root_presented_as_v2", verify(D4[0], 0, 4, pb2.b, pb2.L, rtmp, 4));
+        /* 15 */
+        reject_line("size_mismatch", verify(D9[3], 3, 9, pb.b, pb.L, R9, 8));
+
+        free(D4); free(D9); free(D1024); free(D1025);
     }
 
-    plen = gen_path(3, D9, 9, path, 0);
-    mth(D9, 9, x); tagged_root(8, x, y);
-    print_reject("root_for_other_n", verify(D9[3], 3, 9, path, plen, y));
-
-    plen = gen_path(0, D9, 9, path, 0);
-    print_reject("index_out_of_range", verify(D9[0], 9, 9, path, plen, R9));
-
-    /* 10-12: construction rejections */
-    {
-        ref_t L[3];
-        memcpy(L[0], D9[0], HL); memcpy(L[1], D9[1], HL); memcpy(L[2], D9[1], HL);
-        print_reject("duplicate_ref", closure_root(L, 3, root));
-        memcpy(L[0], D9[1], HL); memcpy(L[1], D9[0], HL);
-        print_reject("non_ascending", closure_root(L, 2, root));
+    /* Section 3 */
+    for (ni = 0; ni <= 5; ni++) {
+        bstr *D = make_D(ni);
+        uint8_t r[32];
+        v1_root(D, ni, r);
+        printf("V1ROOT n=%lu root=", (unsigned long)ni);
+        print_hex(r);
+        putchar('\n');
+        free(D);
     }
-    make_D(N_MAX + 1, g_refs);
-    print_reject("too_many_refs", closure_root(g_refs, N_MAX + 1, root));
     return 0;
 }
