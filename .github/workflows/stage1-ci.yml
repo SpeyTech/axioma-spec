@@ -48,3 +48,21 @@ jobs:
           ${{ matrix.cc }} -std=c99 -Wall -Wextra -Werror -pedantic -O2 $SAN reference-c/merkle_v2.c -o "$RUNNER_TEMP/mv2"
           "$RUNNER_TEMP/mv2" | cmp - vectors.txt
           echo "FINGERPRINT axioma-spec ${{ matrix.name }} $(uname -m) $(sha256sum vectors.txt | cut -d' ' -f1)"
+      - name: SRS-004-AMD-002 (AX:OBS:v2 draft) vectors reproduce byte for byte (both reference implementations)
+        run: |
+          cd estate/axioma-spec/docs/requirements/SRS-004-AMD-002-vectors
+          SAN="${{ matrix.san }}"
+          python3 -I reference-python/obs_v2.py | cmp - vectors.txt
+          ${{ matrix.cc }} -std=c99 -Wall -Wextra -Werror -pedantic -O2 $SAN reference-c/obs_v2.c -o "$RUNNER_TEMP/obs2"
+          "$RUNNER_TEMP/obs2" | cmp - vectors.txt
+          echo "FINGERPRINT axioma-spec-obs-v2 ${{ matrix.name }} $(uname -m) $(sha256sum vectors.txt | cut -d' ' -f1)"
+      - name: SRS-004-AMD-002 NFC targeted vectors reproduce against Unicode 16.0.0 reference
+        # x86_64 only: unicodedata2 16.0.0 publishes no aarch64 wheel, and the
+        # reference is not built from source in CI. The vectors are data, so
+        # architecture identity is not at issue here.
+        if: runner.arch == 'X64'
+        run: |
+          python3 -m venv "$RUNNER_TEMP/ud2"
+          "$RUNNER_TEMP/ud2/bin/pip" install -q --only-binary :all: unicodedata2==16.0.0
+          cd estate/axioma-spec/docs/requirements/SRS-004-AMD-002-vectors/nfc
+          "$RUNNER_TEMP/ud2/bin/python" -I nfc_reference.py | cmp - nfc-targeted-u16.txt
