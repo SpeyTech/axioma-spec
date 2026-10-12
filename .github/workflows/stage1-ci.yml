@@ -37,7 +37,11 @@ jobs:
           cd estate/axioma-spec/docs/requirements/SRS-007-AMD-001-vectors
           SAN="${{ matrix.san }}"
           python3 -I reference-python/merkle_v2.py | cmp - vectors.txt
-          python3 reference-python/selftest.py
+          # v0.2 continuity: the v0.1 implementations still reproduce the v0.2 set,
+          # and the v0.3 set keeps those 65 lines byte-identical.
+          python3 -I reference-python/v0.1/merkle_v2.py | cmp - vectors-v0.2.txt
+          python3 reference-python/v0.1/selftest.py
+          head -65 vectors.txt | cmp - vectors-v0.2.txt
           ${{ matrix.cc }} -std=c99 -Wall -Wextra -Werror -pedantic -O2 $SAN reference-c/merkle_v2.c -o "$RUNNER_TEMP/mv2"
           "$RUNNER_TEMP/mv2" | cmp - vectors.txt
           echo "FINGERPRINT axioma-spec ${{ matrix.name }} $(uname -m) $(sha256sum vectors.txt | cut -d' ' -f1)"
