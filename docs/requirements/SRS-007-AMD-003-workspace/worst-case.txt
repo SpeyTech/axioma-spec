@@ -1,0 +1,11 @@
+n=1 worst_canonical_bytes=1718
+n=2 worst_canonical_bytes=1787
+n=9 worst_canonical_bytes=2270
+n=10 worst_canonical_bytes=2340
+n=99 worst_canonical_bytes=8570
+n=100 worst_canonical_bytes=8641
+n=192 worst_canonical_bytes=15173
+n=999 worst_canonical_bytes=72470
+n=1000 worst_canonical_bytes=72542
+n=1024 worst_canonical_bytes=74270
+AX_PROOF_V2_WORKSPACE_MIN=74270
