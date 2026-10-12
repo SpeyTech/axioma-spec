@@ -15,8 +15,8 @@ axioma-spec: deterministic, verifiable, certifiable.
 
 ### Governing Documents
 
-- [Axioma Framework v0.4](../axioma-spec/AXIOMA-FRAMEWORK-v0.4.md)
-- [DVEC-001 v1.3](../axioma-spec/DVEC-001-v1.3-Final.md)
+- [Axioma Framework v0.4](docs/AXIOMA-FRAMEWORK-v0.4.md)
+- DVEC-001: this README declares v1.3; the only DVEC text in this repository is [DVEC-001 v1.4](docs/DVEC-001-v1.4-Final.md)
 - [DVM-SPEC-001](https://github.com/SpeyTech/certifiable)
 
 ### SRS Documents
