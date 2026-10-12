@@ -21,8 +21,10 @@
  * from FIPS 180-4. Any divergence is a conformance failure that will produce
  * different hash outputs on the same input, breaking cross-platform bit-identity
  * between the seed derivation path and the general hashing path.
- * Verification: test_conformance.c asserts sha256_56(56-byte-input) ==
- * axilog_sha256(same-56-byte-input) on a known test vector.
+ * Verification: axioma-l0 test_conformance.c asserts that the single-block
+ * compression behind sha256_56() equals axilog_sha256() on a known 48-byte
+ * vector. The check is made below 56 bytes because at 56 bytes sha256_56()
+ * is not SHA-256 (SRS-EC-001 erratum E-SEED-1).
  */
 
 #include "axilog/sha256.h"
