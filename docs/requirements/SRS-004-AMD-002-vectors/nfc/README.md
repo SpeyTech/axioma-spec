@@ -37,6 +37,14 @@ The harness has been exercised on a synthetic file built from the reference: it 
 - the 50 targeted vectors agree;
 - derived verdict list SHA-256 `da5aca59a5fffbf42abc01de9e9a6b2410a69f4723a8ce34298f55ff6db08345`.
 
+**Reproducibility record** (`ucd16/CONFORMANCE-TRANSCRIPT-2026-10-12-rerun.txt`, added after `f688986`, which is unchanged): a rerun of the same harness on the same file, with its verbatim output, which is identical to the result above. It records:
+- the interpreter (CPython 3.13.16);
+- the reference: unicodedata2 16.0.0, `unidata_version` 16.0.0, from the PyPI wheel `unicodedata2-16.0.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl` with SHA-256 `64fc29fd…37a6`; the installed module is identical to the one in the wheel;
+- the harness SHA-256 `c35ac9c8…609f`;
+- the input SHA-256 and git blob;
+- the exact command line and exit status;
+- the original run's command, from the session record.
+
 This confirms the reference and the vectors. It does not certify any implementation; none exists or is authorised.
 
 No implementation exists or is authorised (owner direction 2026-10-12: Option B, v2 only, not before the versioned protocol decision).

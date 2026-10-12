@@ -1,0 +1,43 @@
+# NT16 conformance: reproducibility rerun with full provenance
+# Supplements CONFORMANCE-RESULT-2026-10-12.txt (commit f688986), which is not modified.
+# Original run (f688986), from the session record: same venv, interpreter
+# and harness; the input was the same blob (3aae8f72...) extracted with
+# git show from origin/unicode/nt16-2026-10 to a scratch path:
+#   /tmp/ud2venv/bin/python -I docs/requirements/SRS-004-AMD-002-vectors/nfc/nt16_conformance.py \
+#       <scratch>/nt16/NormalizationTest.txt | tee <scratch>/nt16/conformance.txt
+# Its output lines are in CONFORMANCE-RESULT-2026-10-12.txt. This rerun's
+# output (below) is identical to them line for line.
+run_utc: 2026-10-12T23:18:25Z
+spec_tree_commit: f688986fe0c17faec3c6627343a8eb442b988f90
+host: Linux 6.18.44-fc-v114 x86_64
+interpreter: /tmp/ud2venv/bin/python (venv)
+interpreter_version: 3.13.16 (main, Oct  1 2026, 15:40:24) [GCC 13.3.0]
+interpreter_implementation: CPython 3.13.16
+reference_package: unicodedata2 16.0.0
+reference_unidata_version: 16.0.0
+reference_wheel: unicodedata2-16.0.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (PyPI)
+reference_wheel_sha256: 64fc29fd4ea52946d6105bcf1fdb42198658de2ec0bd13b996390396454437a6
+reference_module_sha256: ee317ccf3716c89a255dbe211ee4ff9f0aafcc62a179b2c110b323e4b16b9bcb (installed; identical to the module inside the wheel)
+stdlib_unicodedata_version_not_used: 15.1.0
+harness: docs/requirements/SRS-004-AMD-002-vectors/nfc/nt16_conformance.py
+harness_sha256: c35ac9c88aff4e320723a9b1c888517a6b30e2abd7d9434daa2c5f059576609f
+harness_git_blob: 9831bf92cc5ab49610b6027da0793f80115eeb4d
+targeted_vectors_sha256: c78960c54db1a9f37abff756aac121b685db7f1ee03f678ec7793ef58a3e883e
+input: docs/requirements/SRS-004-AMD-002-vectors/nfc/ucd16/NormalizationTest.txt (commit b1b9059)
+input_sha256: d811971453e7075e1ad56fb1b301eece5aa80757b81f6156e74a1bfb3ae5ceb1
+input_git_blob: 3aae8f72e873dfc3c1e876775859e6090b3c39f9
+input_lines: 20026
+input_header: # NormalizationTest-16.0.0.txt
+working_directory: <spec checkout root>
+command: /tmp/ud2venv/bin/python -I docs/requirements/SRS-004-AMD-002-vectors/nfc/nt16_conformance.py docs/requirements/SRS-004-AMD-002-vectors/nfc/ucd16/NormalizationTest.txt
+----- stdout and stderr, verbatim -----
+file sha256 d811971453e7075e1ad56fb1b301eece5aa80757b81f6156e74a1bfb3ae5ceb1 (matches owner-reported digest)
+test lines 19965, Part1 code points 17085
+reference NFC invariant failures on file lines 0
+code points outside Part1 not NFC-invariant 0
+column strings 99825, over-bound 0, derived-vs-reference verdict disagreements 0
+targeted vector disagreements 0
+derived admission verdicts sha256 da5aca59a5fffbf42abc01de9e9a6b2410a69f4723a8ce34298f55ff6db08345
+NT16 CONFORMANCE: PASS
+----- end -----
+exit_status: 0
