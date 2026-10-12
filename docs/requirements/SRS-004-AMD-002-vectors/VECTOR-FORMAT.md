@@ -1,4 +1,4 @@
-# Vector harness definition for SRS-004-AMD-002 v0.1 (test harness, not normative)
+# Vector harness definition for SRS-004-AMD-002 v0.2 (test harness, not normative)
 
 This file is pure ASCII: every non-ASCII character is written as a Python-style `\uXXXX` escape.
 
@@ -8,7 +8,7 @@ Implement `AX:OBS:v2` from AMENDMENT.md (SRS-004-AMD-002) text only. Then print 
 - no other output.
 
 For every case, start from the BASE record below and apply the listed changes.
-1. Run admission validation as SHALL-020 orders it, steps 1 to 6 and 9. Every output in this harness is NFC under any Unicode version, so steps 7 and 8 never fire, and implementations MAY skip them here.
+1. Run admission validation as SHALL-020 orders it, steps 1 to 7 and 10. Every output in this harness is NFC under any Unicode version, so steps 8 and 9 never fire, and implementations MAY skip them here.
 2. If a check fails, print the REJECT line for the first failing check.
 3. Otherwise compute `input_hash` (SHALL-009) and `obs_hash` (SHALL-010), build the stored record (canonical form with `obs_hash` present), and print the OBS line.
 
@@ -33,6 +33,7 @@ For every case, start from the BASE record below and apply the listed changes.
 | output | `"ok"` |
 | output_size | byte length of output, unless a case sets it |
 | params | max_tokens null, seed null, temperature null, top_p null |
+| rejected_record_size | absent |
 
 ## Output lines
 
@@ -62,6 +63,10 @@ REJECT case=<name> result=REJECTED(<reason>)
 | 15 | identifier_256 | model_id `"m"*256` |
 | 16 | quote_heavy_fits | output `"\""*32000` |
 | 17 | del_free_unicode | output `"\u00a0\u2028\u2029"` (no-break space, line separator, paragraph separator: not controls, written unescaped) |
+| 18 | max_tokens_zero | max_tokens 0 |
+| 19 | max_tokens_max | max_tokens 2147483647 |
+| 20 | size_rejection_record | completion_state ERROR, failure_type INVALID_OUTPUT, output `""`, rejected_record_size 70000 |
+| 21 | record_exact_limit | output `"\""*32000 + "a"*X`, with X the value that makes the stored record exactly 65536 bytes (the stored length is linear in X, and output_size keeps 5 digits) |
 
 ## Section 2: rejection cases (in this order)
 
@@ -89,5 +94,13 @@ REJECT case=<name> result=REJECTED(<reason>)
 | 20 | quote_heavy_over | output `"\""*33000` | record_size |
 | 21 | order_state_before_range | failure_type TIMEOUT, ledger_seq 9007199254740992 | state_pair |
 | 22 | order_identifier_before_output | model_id `""`, output `"a\u0001b"` | identifier |
+| 23 | max_tokens_negative | max_tokens -1 | integer_range |
+| 24 | max_tokens_over | max_tokens 2147483648 | integer_range |
+| 25 | rejected_size_on_complete | rejected_record_size 70000 | member_not_permitted |
+| 26 | rejected_size_on_timeout | completion_state ERROR, failure_type TIMEOUT, output `""`, rejected_record_size 70000 | member_not_permitted |
+| 27 | rejected_size_with_output | completion_state ERROR, failure_type INVALID_OUTPUT, output `"x"`, rejected_record_size 70000 | member_not_permitted |
+| 28 | rejected_size_too_small | completion_state ERROR, failure_type INVALID_OUTPUT, output `""`, rejected_record_size 65536 | integer_range |
+| 29 | record_exact_limit_plus_one | as Section 1 case 21, with X + 1 | record_size |
+| 30 | order_member_before_range | rejected_record_size 70000, ledger_seq 9007199254740992 | member_not_permitted |
 
 The expected-reason column states what the text requires. The harness output is what each implementation actually computes.
