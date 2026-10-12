@@ -70,3 +70,17 @@ jobs:
           "$RUNNER_TEMP/ud2/bin/pip" install -q --only-binary :all: unicodedata2==16.0.0
           cd estate/axioma-spec/docs/requirements/SRS-004-AMD-002-vectors/nfc
           "$RUNNER_TEMP/ud2/bin/python" -I nfc_reference.py | cmp - nfc-targeted-u16.txt
+      - name: Unicode 16.0.0 NormalizationTest full conformance (NT16)
+        # Re-runs the recorded conformance on every CI run of this line. The
+        # harness refuses any file whose SHA-256 is not the owner-reported
+        # d8119714...0ceb1 and exits non-zero on any disagreement. x86_64
+        # only, for the reason given in the previous step.
+        if: runner.arch == 'X64'
+        run: |
+          cd estate/axioma-spec/docs/requirements/SRS-004-AMD-002-vectors/nfc
+          "$RUNNER_TEMP/ud2/bin/python" -VV
+          "$RUNNER_TEMP/ud2/bin/pip" download -q --no-deps --only-binary :all: unicodedata2==16.0.0 -d "$RUNNER_TEMP/ud2whl"
+          sha256sum "$RUNNER_TEMP"/ud2whl/*.whl
+          "$RUNNER_TEMP/ud2/bin/python" -I nt16_conformance.py ucd16/NormalizationTest.txt | tee "$RUNNER_TEMP/nt16.txt"
+          grep -qx 'NT16 CONFORMANCE: PASS' "$RUNNER_TEMP/nt16.txt"
+          grep -vx -e '#.*' ucd16/CONFORMANCE-RESULT-2026-10-12.txt | cmp - "$RUNNER_TEMP/nt16.txt"
