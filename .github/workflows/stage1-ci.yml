@@ -1,0 +1,43 @@
+# Stage 1 CI (proposed; owner-approved approach 2026-10-12). Isolated branch only.
+# Third-party actions are pinned by full commit SHA. No secrets are used.
+name: stage1-ci
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  substrate-and-vectors:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: gcc-release,   os: ubuntu-24.04,     cc: gcc,   type: Release, san: "" }
+          - { name: clang-release, os: ubuntu-24.04,     cc: clang, type: Release, san: "" }
+          - { name: asan-ubsan,    os: ubuntu-24.04,     cc: gcc,   type: Debug,   san: "-fsanitize=address,undefined -fno-sanitize-recover=all" }
+          - { name: arm64-gcc,     os: ubuntu-24.04-arm, cc: gcc,   type: Release, san: "" }
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          path: estate/axioma-spec
+      - name: Toolchain
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq cmake clang
+          ${{ matrix.cc }} --version | head -1; uname -m
+      - name: Build SHA-256 substrate
+        run: |
+          SAN="${{ matrix.san }}"
+          cmake -S estate/axioma-spec -B build -DCMAKE_BUILD_TYPE=${{ matrix.type }} \
+                -DCMAKE_C_COMPILER=${{ matrix.cc }} -DCMAKE_C_FLAGS="$SAN"
+          cmake --build build -j
+      - name: SRS-007-AMD-001 vectors reproduce byte for byte (both reference implementations)
+        run: |
+          cd estate/axioma-spec/docs/requirements/SRS-007-AMD-001-vectors
+          SAN="${{ matrix.san }}"
+          python3 -I reference-python/merkle_v2.py | cmp - vectors.txt
+          python3 reference-python/selftest.py
+          ${{ matrix.cc }} -std=c99 -Wall -Wextra -Werror -pedantic -O2 $SAN reference-c/merkle_v2.c -o "$RUNNER_TEMP/mv2"
+          "$RUNNER_TEMP/mv2" | cmp - vectors.txt
+          sha256sum vectors.txt
