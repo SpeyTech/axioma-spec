@@ -1,0 +1,11 @@
+# NT16 conformance run, 2026-10-12
+# file: ucd16/NormalizationTest.txt (owner-transferred, commit b1b9059), 20,026 lines
+# reference: unicodedata2 16.0.0 (PyPI wheel, x86_64); harness: nt16_conformance.py
+file sha256 d811971453e7075e1ad56fb1b301eece5aa80757b81f6156e74a1bfb3ae5ceb1 (matches owner-reported digest)
+test lines 19965, Part1 code points 17085
+reference NFC invariant failures on file lines 0
+code points outside Part1 not NFC-invariant 0
+column strings 99825, over-bound 0, derived-vs-reference verdict disagreements 0
+targeted vector disagreements 0
+derived admission verdicts sha256 da5aca59a5fffbf42abc01de9e9a6b2410a69f4723a8ce34298f55ff6db08345
+NT16 CONFORMANCE: PASS

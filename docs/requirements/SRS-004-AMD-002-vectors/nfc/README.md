@@ -28,6 +28,15 @@ v/bin/python -I nfc_reference.py | cmp - nfc-targeted-u16.txt
 
 The harness has been exercised on a synthetic file built from the reference: it passes, and it fails when one line is corrupted. That proves only the plumbing. **The conformance result exists only once the owner's file bytes have been transferred and the run has passed on them.**
 
-**Status:** the owner obtained `NormalizationTest.txt` 16.0.0 on the owner-controlled host: 20,026 lines, header dated 2024-04-30, SHA-256 `d811971453e7075e1ad56fb1b301eece5aa80757b81f6156e74a1bfb3ae5ceb1`. The bytes have **not yet been transferred** to this environment, because unicode.org is blocked by its network policy. No result is claimed from the checksum alone.
+**Status:** the owner obtained `NormalizationTest.txt` 16.0.0 on the owner-controlled host: 20,026 lines, header dated 2024-04-30, SHA-256 `d811971453e7075e1ad56fb1b301eece5aa80757b81f6156e74a1bfb3ae5ceb1`. The bytes were transferred by the owner through git: they are `ucd16/NormalizationTest.txt` (commit `b1b9059` on `unicode/nt16-2026-10`), and their digest was verified on receipt.
+
+**Conformance result (2026-10-12): PASS** (`ucd16/CONFORMANCE-RESULT-2026-10-12.txt`):
+- 19,965 test lines; the reference holds every UAX #15 NFC invariant on every line;
+- every code point outside Part 1 is NFC-invariant;
+- all 99,825 column strings: the admission verdict derived from the file's own columns equals the reference verdict, with no over-bound strings;
+- the 50 targeted vectors agree;
+- derived verdict list SHA-256 `da5aca59a5fffbf42abc01de9e9a6b2410a69f4723a8ce34298f55ff6db08345`.
+
+This confirms the reference and the vectors. It does not certify any implementation; none exists or is authorised.
 
 No implementation exists or is authorised (owner direction 2026-10-12: Option B, v2 only, not before the versioned protocol decision).
