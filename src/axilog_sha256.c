@@ -2,7 +2,6 @@
 // DVEC: v1.3
 // DETERMINISM: D1 — Strict Deterministic
 // Copyright (c) 2026 Spey Systems LTD. All rights reserved.
-// Patent: UK GB2521625.0
 
 /*
  * axilog_sha256.c — Variable-length SHA-256 and axilog_commit implementation.

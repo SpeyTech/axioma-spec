@@ -5,7 +5,6 @@
 **Date:** April 2026
 **Author:** William Murray, SpeyTech
 **Status:** Production Gold — Audit Complete
-**Patent:** UK GB2521625.0
 **Supersedes:** v0.3-LOCKED
 
 ---
@@ -72,7 +71,7 @@ COMMERCIAL (Proprietary — SpeyTech Commercial License)
   axioma-sdk/rust     — Rust SDK
   axioma-sdk/ts       — TypeScript SDK
   axioma-sdk/python   — Python SDK (later)
-  libdvm              — Patented C99 SDK (Patent GB2521625.0)
+  libdvm              — C99 SDK
 ```
 
 ### 1.4 Core Invariants
@@ -96,7 +95,7 @@ This is not a design goal. It is the contract.
 **Who:** Aerospace, medical device, automotive teams. C99 shops.
 **What they need:** libaxilog headers, static library, golden reference tooling.
 **Language:** C99 only. No wrapper. The DVEC contract is the API.
-**Product:** libaxilog (AGPL) + libdvm (commercial, patented).
+**Product:** libaxilog (AGPL) + libdvm (commercial).
 **SDK relevance:** Low.
 
 ### 2.2 Profile B — Governance Engineers (Track B)
@@ -1200,7 +1199,6 @@ All v0.3 criteria hold. The following are added for v0.4 and v0.4-R1:
 
 *AXIOMA-SDK-STRATEGY-001 v0.4-LOCKED — Production Gold*
 *William Murray — SpeyTech — April 2026*
-*Patent GB2521625.0*
 *Source authority for L0: L0-SPEC-001 v1.3-LOCKED · DOI 10.5281/zenodo.19489291*
 *Review A sign-off: Production Gold*
 *Review B sign-off: Production Gold*

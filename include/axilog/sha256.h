@@ -8,7 +8,6 @@
  *
  * Copyright (c) 2026 Spey Systems LTD
  * SPDX-License-Identifier: GPL-3.0-or-later
- * Patent: UK GB2521625.0
  *
  * Use axilog_commit() for domain-separated evidence records.
  * Use axilog_sha256() only for plain digests (e.g. raw prompt ingress hashing).

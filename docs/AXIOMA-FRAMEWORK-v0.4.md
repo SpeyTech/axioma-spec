@@ -3,7 +3,6 @@
 ### Framework Specification v0.4
 
 **Author:** William Murray, SpeyTech
-**Patent:** UK GB2521625.0 (Murray Deterministic Computing Platform)
 **Status:** Pre-external-review — final internal audit complete
 **Supersedes:** AXIOMA-FRAMEWORK-v0.3
 **Date:** March 2026
@@ -879,7 +878,7 @@ COMMERCIAL
   Axioma Oracle Gateway (standalone entry)
   Axioma Platform SDK (full stack)
   axioma-governance (policy engine + reports)
-  libdvm (patented C99 SDK)
+  libdvm (C99 SDK)
   Certification evidence tooling
   Enterprise support + SLA
 ```
@@ -999,7 +998,7 @@ No direct competitor exists in this form.
 | Layer 7 — Performance evidence | certifiable-bench | Production gold |
 
 **11,840+ test assertions. Nine production repositories.
-One patent. One published specification. No vapourware.**
+One published specification. No vapourware.**
 
 ---
 
@@ -1008,4 +1007,3 @@ One patent. One published specification. No vapourware.**
 Provable everywhere.*
 
 *William Murray · SpeyTech · March 2026*
-*Patent GB2521625.0*

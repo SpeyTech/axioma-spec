@@ -6,7 +6,6 @@
 **Date:** April 2026
 **Author:** William Murray, SpeyTech
 **Status:** Production Gold — Audit Complete
-**Patent:** UK GB2521625.0
 **Determinism Class:** EC-D1 (Strict Epistemic Containment)
 **Alignment:** DVEC-001 v1.3 · AXIOMA-FRAMEWORK v0.4 · SRS-001 through SRS-007
 **Source Authority:** Epistemic Security: A Missing Assurance Dimension in Frontier AI Deployment (Murray, 2026). DOI: 10.5281/zenodo.19489291
@@ -1417,7 +1416,6 @@ The specification above is locked and unchanged. The following entries record wh
 
 *L0-SPEC-001 v1.3-LOCKED — Production Gold*
 *William Murray — SpeyTech — April 2026*
-*Patent GB2521625.0*
 *Source authority: DOI 10.5281/zenodo.19489291*
 *Review A sign-off: Production Gold*
 *Review B sign-off: Production Gold*

@@ -5,7 +5,7 @@
 **Supersedes:** DVEC-001 v1.3
 **Parent commit:** 2dc2243c11a74072b7dd1c7be89746a158394144 (axioma-spec head this amendment is cut against)
 **Scope:** Axioma Framework · Axilog Substrate · certifiable-* Ecosystem · FCC-001 claim records
-**Alignment:** DVM-SPEC-001 v1.0-rc1 · Axioma v0.4 · MDCP · FCC-001 v0.4.1 · Patent GB2521625.0
+**Alignment:** DVM-SPEC-001 v1.0-rc1 · Axioma v0.4 · MDCP · FCC-001 v0.4.1
 
 ---
 
@@ -774,4 +774,3 @@ The system MUST include and maintain:
 
 *DVEC-001 v1.3 — Final*
 *William Murray · SpeyTech · March 2026*
-*Patent GB2521625.0*

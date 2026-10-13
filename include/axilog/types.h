@@ -8,7 +8,6 @@
  *
  * Copyright (c) 2026 Spey Systems LTD
  * SPDX-License-Identifier: AGPL-3.0-or-later
- * Patent: UK GB2521625.0
  *
  * @traceability SRS-001-SHALL-001, SRS-001-SHALL-002, SRS-005-SHALL-001,
  *               SRS-005-SHALL-004, SRS-005-SHALL-006
