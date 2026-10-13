@@ -1,6 +1,8 @@
 # Documentation Terminology Policy
 
-Status: APPROVED by owner review, 2026-10-12. Applies to new and changed documentation; existing lines are triaged separately (normative text changes only through amendment).
+Status: project-wide, non-normative guidance. Approving authority: William Murray, Director, Spey Systems LTD (owner decision D6, 13 October 2026). Applies to new and changed documentation; existing lines are triaged separately (normative text changes only through amendment).
+
+Legal / intellectual property owner: Spey Systems LTD (SC889983). Documentation owner: William Murray, Director, Spey Systems LTD.
 
 ## Principle
 
